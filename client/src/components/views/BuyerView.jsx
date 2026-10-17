@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Building2, CreditCard, ShieldCheck, CheckCircle2, ArrowRight } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 
 export default function BuyerView({ state, onRefresh }) {
-  const { activeRole } = useRole();
+  const { activeRole, setCustomPhone } = useRole();
+  const [buyersList, setBuyersList] = useState([]);
+  const [selectedBuyerPhone, setSelectedBuyerPhone] = useState(activeRole.phone || '+91 98111 22334');
   const [buyerName, setBuyerName] = useState(activeRole.name || 'Shree Ram Flour & Oil Mill');
   const [quantity, setQuantity] = useState(15);
   const [bidPrice, setBidPrice] = useState(5420);
@@ -11,6 +13,22 @@ export default function BuyerView({ state, onRefresh }) {
   const [orderResult, setOrderResult] = useState(null);
   const [escrowPaid, setEscrowPaid] = useState(false);
   const [paying, setPaying] = useState(false);
+
+  useEffect(() => {
+    fetchBuyers();
+  }, []);
+
+  const fetchBuyers = async () => {
+    try {
+      const res = await fetch('/api/buyers');
+      if (res.ok) {
+        const data = await res.json();
+        setBuyersList(data.buyers || []);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch buyers:', e);
+    }
+  };
 
   const handleMatchOrder = async (e) => {
     e.preventDefault();
@@ -101,12 +119,34 @@ export default function BuyerView({ state, onRefresh }) {
             <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
               <Building2 className="w-4 h-4" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">{activeRole.name}</h3>
+            {buyersList.length > 0 ? (
+              <select
+                value={selectedBuyerPhone}
+                onChange={(e) => {
+                  const phone = e.target.value;
+                  setSelectedBuyerPhone(phone);
+                  setCustomPhone(phone);
+                  const selected = buyersList.find(b => b.phone === phone);
+                  if (selected) {
+                    setBuyerName(selected.company_name || selected.name);
+                  }
+                }}
+                className="text-base font-bold text-foreground bg-transparent border-b border-border focus:outline-none focus:border-primary cursor-pointer"
+              >
+                {buyersList.map((b) => (
+                  <option key={b.phone} value={b.phone} className="bg-card text-foreground">
+                    {b.company_name || b.name} &bull; {b.target_crop || 'Agri Commodity'}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <h3 className="text-lg font-bold text-foreground">{buyerName}</h3>
+            )}
             <span className="text-xs px-2 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-400 font-semibold border border-amber-500/30">
               Institutional Processor
             </span>
           </div>
-          <p className="text-xs text-muted-fg mt-0.5">GSTIN: {activeRole.gstin} &bull; Hub: {activeRole.location}</p>
+          <p className="text-xs text-muted-fg mt-0.5">CLI: {selectedBuyerPhone} &bull; Hub: {activeRole.location}</p>
         </div>
 
         <div className="flex items-center gap-3 bg-secondary/80 px-4 py-2.5 rounded-xl border border-border">

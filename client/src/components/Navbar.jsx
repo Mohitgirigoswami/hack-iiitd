@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Phone, RefreshCw, Bell, Radio, ShieldCheck } from 'lucide-react';
+import { Phone, RefreshCw, Bell, Radio, ShieldCheck, UserCheck, KeyRound } from 'lucide-react';
 import ThemeSwitcher from './ThemeSwitcher';
 import OmnichannelNotificationDrawer from './OmnichannelNotificationDrawer';
 import { useRole } from '../context/RoleContext';
+import KhetOSLogo from './KhetOSLogo';
 
 export default function Navbar() {
   const location = useLocation();
@@ -53,8 +54,8 @@ export default function Navbar() {
           {/* Brand & Tagline */}
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-black text-lg shadow-sm group-hover:scale-105 transition">
-                ख
+              <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center p-0.5 shadow-sm group-hover:scale-105 transition">
+                <KhetOSLogo size={32} />
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
@@ -84,7 +85,7 @@ export default function Navbar() {
           <nav className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/"
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                 location.pathname === '/'
                   ? 'bg-secondary text-foreground'
                   : 'text-muted-fg hover:text-foreground hover:bg-secondary/50'
@@ -95,7 +96,7 @@ export default function Navbar() {
 
             <Link
               to="/dashboard"
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                 location.pathname === '/dashboard'
                   ? 'bg-secondary text-foreground'
                   : 'text-muted-fg hover:text-foreground hover:bg-secondary/50'
@@ -104,10 +105,24 @@ export default function Navbar() {
               Dashboard
             </Link>
 
+            {/* Auth / Register Link */}
+            <Link
+              to="/login"
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
+                location.pathname === '/login' || location.pathname === '/register'
+                  ? 'bg-secondary text-foreground'
+                  : 'text-muted-fg hover:text-foreground hover:bg-secondary/50'
+              }`}
+            >
+              <KeyRound className="w-3.5 h-3.5 text-primary" />
+              <span className="hidden sm:inline">Register / Sign In</span>
+              <span className="sm:hidden">Auth</span>
+            </Link>
+
             {/* Standalone Route for Calling */}
             <Link
               to="/call"
-              className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
                 location.pathname === '/call'
                   ? 'bg-primary text-primary-foreground shadow-glow'
                   : 'bg-secondary text-foreground border border-border hover:bg-primary hover:text-primary-foreground'

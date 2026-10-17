@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Bell, X, Phone, MessageSquare, Volume2, CheckCircle2, 
-  ExternalLink, Send, ShieldCheck, Clock, Radio, Sparkles, RefreshCw
+  ExternalLink, Send, ShieldCheck, Clock, Radio, Sparkles, RefreshCw, Bot
 } from 'lucide-react';
+import TelegramBotSimulator from './TelegramBotSimulator';
 
 export default function OmnichannelNotificationDrawer({ isOpen, onClose, activePhone = "+91 98123 45099" }) {
   const [notifications, setNotifications] = useState([]);
@@ -13,6 +14,7 @@ export default function OmnichannelNotificationDrawer({ isOpen, onClose, activeP
   const [linking, setLinking] = useState(false);
   const [linkSuccess, setLinkSuccess] = useState(false);
   const [sendingTest, setSendingTest] = useState(false);
+  const [showBot, setShowBot] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -173,20 +175,36 @@ export default function OmnichannelNotificationDrawer({ isOpen, onClose, activeP
             </button>
           </div>
 
-          <div className="flex justify-between items-center pt-1">
+          <div className="flex justify-between items-center pt-1 border-t border-border/40">
             <span className="text-[10px] text-muted-fg">Simultaneous IVR Call + Telegram Ping</span>
-            <button
-              onClick={handleSendTestDual}
-              disabled={sendingTest}
-              className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
-            >
-              <Send className="w-3 h-3" />
-              {sendingTest ? 'Sending...' : 'Test Dual Alert ⚡'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowBot(!showBot)}
+                className="text-[11px] font-bold text-blue-400 hover:underline flex items-center gap-1"
+              >
+                <Bot className="w-3.5 h-3.5" />
+                {showBot ? 'View Alerts' : 'Open Bot Terminal'}
+              </button>
+              <button
+                onClick={handleSendTestDual}
+                disabled={sendingTest}
+                className="text-[11px] font-bold text-primary hover:underline flex items-center gap-1"
+              >
+                <Send className="w-3 h-3" />
+                {sendingTest ? 'Sending...' : 'Test Dual ⚡'}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Channel Filter Pills */}
+        {/* Telegram Bot Simulator or Notifications Scroll List */}
+        {showBot ? (
+          <div className="flex-1 overflow-hidden p-2">
+            <TelegramBotSimulator activePhone={activePhone} onRefresh={fetchNotifications} />
+          </div>
+        ) : (
+          <>
+            {/* Channel Filter Pills */}
         <div className="px-4 py-2.5 border-b border-border flex items-center gap-2 text-xs bg-card">
           <button
             onClick={() => setFilter('all')}
@@ -287,10 +305,11 @@ export default function OmnichannelNotificationDrawer({ isOpen, onClose, activeP
                   )}
                 </div>
               );
-            })
-          )}
-        </div>
-      </div>
+            }))}
+          </div>
+        </>
+      )}
     </div>
-  );
+  </div>
+);
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Phone, PhoneOff, ArrowLeft, Volume2, CheckCircle2, ChevronRight, 
-  Mic, Sparkles, MapPin, ShieldCheck, UserCheck, RefreshCw, MessageSquare, Bell
+  Mic, Sparkles, MapPin, ShieldCheck, UserCheck, RefreshCw, MessageSquare, Bell, Package
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '../context/RoleContext';
@@ -27,6 +27,8 @@ export default function CallSimulator() {
   const [registeredKhetPin, setRegisteredKhetPin] = useState(null);
   const [dualAlertDispatched, setDualAlertDispatched] = useState(false);
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
+  const [stockSubmenuMode, setStockSubmenuMode] = useState(false);
+  const [userStockLots, setUserStockLots] = useState([]);
 
   const audioContextRef = useRef(null);
 
@@ -191,6 +193,7 @@ export default function CallSimulator() {
     setCallActive(false);
     setIsSpeaking(false);
     setRegistrationMode(false);
+    setStockSubmenuMode(false);
     if (window.khetosAudio) {
       window.khetosAudio.pause();
       window.khetosAudio.currentTime = 0;
@@ -235,7 +238,7 @@ export default function CallSimulator() {
   };
 
   const handleKeypadPress = async (digit) => {
-    playDtmfTone(digit);
+    playDtmfTone(digit.length === 1 ? digit : digit[0]);
 
     if (!callActive) {
       handleStartCall();
@@ -251,13 +254,26 @@ export default function CallSimulator() {
       }
     }
 
+    // Dynamic Multi-Key Stock Submenu Mapping
+    let sendDigit = digit;
+    if (stockSubmenuMode) {
+      if (digit === '1') sendDigit = '31';
+      else if (digit === '2') sendDigit = '32';
+      else if (digit === '3') sendDigit = '33';
+      else if (digit === '*' || digit === '#') {
+        setStockSubmenuMode(false);
+        speakHindi("मुख्य मेनू पर वापस आ गए हैं। मंडी भाव के लिए 1 दबाएं, पूलिंग के लिए 2 दबाएं, स्टॉक के लिए 3 दबाएं।");
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const res = await fetch('/api/call/keypad', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          digit: digit,
+          digit: sendDigit,
           caller_phone: phoneInput,
           farmer_name: sessionUser?.name || farmerNameInput,
           village: sessionUser?.village || 'Bhalaut'
@@ -271,9 +287,20 @@ export default function CallSimulator() {
         speakHindi(data.voice_prompt_hi, data.audio_base64);
       }
 
-      if (digit === '2') {
+      if (sendDigit === '2') {
         setPoolJoined(true);
         setDualAlertDispatched(true);
+      } else if (sendDigit === '3') {
+        setStockSubmenuMode(true);
+        setUserStockLots(data.user_lots || []);
+      } else if (sendDigit === '31' || sendDigit === '32') {
+        setDualAlertDispatched(true);
+        if (data.lot) {
+          setUserStockLots([data.lot]);
+        }
+      } else if (sendDigit === '33') {
+        setDualAlertDispatched(true);
+        setUserStockLots([]);
       }
     } catch (err) {
       console.error('Call simulator keypad error:', err);
@@ -464,8 +491,71 @@ export default function CallSimulator() {
           </div>
         )}
 
+        {/* Key 3 Stock Management Multi-Key Interactive Panel */}
+        {callActive && stockSubmenuMode && (
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/40 rounded-2xl space-y-3 animate-fade-in text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                <Package className="w-4 h-4" />
+                <span>IVR Key 3: Stock Management Submenu</span>
+              </div>
+              <button
+                onClick={() => setStockSubmenuMode(false)}
+                className="text-[10px] text-muted-fg hover:text-foreground font-mono bg-secondary px-2 py-0.5 rounded border border-border"
+              >
+                Press * for Main Menu
+              </button>
+            </div>
+
+            <p className="text-muted-fg text-[11px] leading-relaxed">
+              Farmer can increase, decrease, or cancel/remove their harvest lot with ₹0 penalty:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
+              <button
+                onClick={() => handleKeypadPress('31')}
+                className="p-2.5 bg-card hover:bg-emerald-500/20 border border-border hover:border-emerald-500/50 rounded-xl text-left font-bold transition flex flex-col justify-between group active:scale-95"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-foreground text-xs block group-hover:text-emerald-400">+1 Qtl Stock</span>
+                  <span className="font-mono text-emerald-400 text-[10px] px-1.5 py-0.5 rounded bg-secondary">
+                    Key 31
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-fg mt-1">Add 2 bags</span>
+              </button>
+
+              <button
+                onClick={() => handleKeypadPress('32')}
+                className="p-2.5 bg-card hover:bg-amber-500/20 border border-border hover:border-amber-500/50 rounded-xl text-left font-bold transition flex flex-col justify-between group active:scale-95"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-foreground text-xs block group-hover:text-amber-400">-1 Qtl Stock</span>
+                  <span className="font-mono text-amber-400 text-[10px] px-1.5 py-0.5 rounded bg-secondary">
+                    Key 32
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-fg mt-1">Reduce 2 bags</span>
+              </button>
+
+              <button
+                onClick={() => handleKeypadPress('33')}
+                className="p-2.5 bg-card hover:bg-rose-500/20 border border-border hover:border-rose-500/50 rounded-xl text-left font-bold transition flex flex-col justify-between group active:scale-95"
+              >
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-foreground text-xs block group-hover:text-rose-400">Cancel Lot</span>
+                  <span className="font-mono text-rose-400 text-[10px] px-1.5 py-0.5 rounded bg-secondary">
+                    Key 33
+                  </span>
+                </div>
+                <span className="text-[10px] text-muted-fg mt-1">₹0 Zero penalty</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Quick Stage Key 2 Demo Button */}
-        {callActive && !poolJoined && !registrationMode && (
+        {callActive && !poolJoined && !registrationMode && !stockSubmenuMode && (
           <button
             onClick={() => handleKeypadPress('2')}
             className="w-full py-2.5 px-3 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/40 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 animate-pulse shadow-sm active:scale-95"
@@ -517,16 +607,16 @@ export default function CallSimulator() {
         {/* DTMF Keypad Grid */}
         <div className="grid grid-cols-3 gap-2.5 max-w-[300px] mx-auto">
           {[
-            { num: '1', sub: registrationMode ? 'Bhalaut' : 'Mandi Rates' },
-            { num: '2', sub: registrationMode ? 'Kalanaur' : 'Pool Truck ⚡' },
-            { num: '3', sub: registrationMode ? 'Najafgarh' : 'My Stock' },
-            { num: '4', sub: registrationMode ? 'Madina' : 'Weather' },
-            { num: '5', sub: 'Order Status' },
-            { num: '6', sub: 'KhetPin' },
-            { num: '7', sub: 'Payments' },
-            { num: '8', sub: 'FPO Support' },
-            { num: '9', sub: 'Language' },
-            { num: '*', sub: 'Repeat' },
+            { num: '1', sub: registrationMode ? 'Bhalaut' : stockSubmenuMode ? '+1 Qtl (31)' : 'Mandi Rates' },
+            { num: '2', sub: registrationMode ? 'Kalanaur' : stockSubmenuMode ? '-1 Qtl (32)' : 'Pool Truck ⚡' },
+            { num: '3', sub: registrationMode ? 'Najafgarh' : stockSubmenuMode ? 'Delete (33)' : 'My Stock' },
+            { num: '4', sub: registrationMode ? 'Madina' : stockSubmenuMode ? '-' : 'Weather' },
+            { num: '5', sub: stockSubmenuMode ? '-' : 'Order Status' },
+            { num: '6', sub: stockSubmenuMode ? '-' : 'KhetPin' },
+            { num: '7', sub: stockSubmenuMode ? '-' : 'Payments' },
+            { num: '8', sub: stockSubmenuMode ? '-' : 'FPO Support' },
+            { num: '9', sub: stockSubmenuMode ? '-' : 'Language' },
+            { num: '*', sub: stockSubmenuMode ? 'Main Menu' : 'Repeat' },
             { num: '0', sub: 'Operator' },
             { num: '#', sub: 'Confirm' },
           ].map((key) => (

@@ -1,12 +1,39 @@
-import React, { useState } from 'react';
-import { Truck, MapPin, CheckCircle2, AlertCircle, RefreshCw, Phone, ShieldCheck, ChevronRight, BarChart3, Activity } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { 
+  Truck, MapPin, CheckCircle2, AlertCircle, RefreshCw, Phone, 
+  ShieldCheck, ChevronRight, BarChart3, Activity, Users, Search, 
+  Building2, Sprout, Filter, ExternalLink
+} from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useRole } from '../../context/RoleContext';
 
 export default function AdminView({ state, onRefresh }) {
   const navigate = useNavigate();
   const { activeRole } = useRole();
   const [selectedCorridor, setSelectedCorridor] = useState('CORR-ROH-01');
+  const [adminTab, setAdminTab] = useState('grid'); // 'grid' | 'directory'
+  const [directory, setDirectory] = useState({ users: [], counts: {} });
+  const [dirLoading, setDirLoading] = useState(false);
+  const [dirFilter, setDirFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchDirectory = async () => {
+    setDirLoading(true);
+    try {
+      const res = await fetch('/api/stakeholders/directory');
+      if (res.ok) {
+        const data = await res.json();
+        setDirectory(data.directory || { users: [], counts: {} });
+      }
+    } catch (e) {
+      console.warn('Directory fetch error:', e);
+    }
+    setDirLoading(false);
+  };
+
+  useEffect(() => {
+    fetchDirectory();
+  }, []);
 
   const pool = state?.active_pool || {};
   const lots = state?.lots || [];
@@ -95,8 +122,40 @@ export default function AdminView({ state, onRefresh }) {
         </div>
       </div>
 
-      {/* Hero Visual Capacity Gauge for Active Corridor */}
-      <div className="bg-card border border-border rounded-2xl p-6 shadow-xl space-y-6">
+      {/* Admin Module Tabs */}
+      <div className="flex border-b border-border gap-2">
+        <button
+          onClick={() => setAdminTab('grid')}
+          className={`pb-3 px-4 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
+            adminTab === 'grid'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-fg hover:text-foreground'
+          }`}
+        >
+          <Activity className="w-4 h-4" />
+          1. Corridor Telemetry & Truck Operations
+        </button>
+
+        <button
+          onClick={() => setAdminTab('directory')}
+          className={`pb-3 px-4 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
+            adminTab === 'directory'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-fg hover:text-foreground'
+          }`}
+        >
+          <Users className="w-4 h-4 text-indigo-400" />
+          2. Stakeholders Directory & KYC Ledger
+          <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-indigo-500/15 text-indigo-400 font-bold border border-indigo-500/30">
+            {directory.counts?.total || 0} Registered
+          </span>
+        </button>
+      </div>
+
+      {adminTab === 'grid' && (
+        <div className="space-y-6">
+          {/* Hero Visual Capacity Gauge for Active Corridor */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-xl space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border">
           <div>
             <div className="flex items-center gap-2">
@@ -347,6 +406,188 @@ export default function AdminView({ state, onRefresh }) {
           </div>
         </div>
       </div>
+    </div>
+  )}
+
+      {/* TAB 2: Stakeholders Directory & KYC Ledger */}
+      {adminTab === 'directory' && (
+        <div className="space-y-6">
+          {/* Stakeholder Metric Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+              <span className="text-[11px] text-muted-fg font-bold uppercase tracking-wider block">Total Directory</span>
+              <span className="text-2xl font-black text-foreground mt-1 block">{directory.counts?.total || 0}</span>
+              <span className="text-[10px] text-muted-fg">Verified Entities</span>
+            </div>
+
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-fg font-bold uppercase tracking-wider block">Smallholders</span>
+                <Sprout className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <span className="text-2xl font-black text-emerald-400 mt-1 block">{directory.counts?.farmers || 0}</span>
+              <span className="text-[10px] text-emerald-500 font-semibold">Zero-App CLI Auto-Auth</span>
+            </div>
+
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-fg font-bold uppercase tracking-wider block">Transporters</span>
+                <Truck className="w-3.5 h-3.5 text-blue-400" />
+              </div>
+              <span className="text-2xl font-black text-blue-400 mt-1 block">{directory.counts?.drivers || 0}</span>
+              <span className="text-[10px] text-blue-500 font-semibold">Pickup Fleet (1.5T-2.5T)</span>
+            </div>
+
+            <div className="bg-card border border-border rounded-2xl p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-muted-fg font-bold uppercase tracking-wider block">Processors</span>
+                <Building2 className="w-3.5 h-3.5 text-amber-400" />
+              </div>
+              <span className="text-2xl font-black text-amber-400 mt-1 block">{directory.counts?.buyers || 0}</span>
+              <span className="text-[10px] text-amber-500 font-semibold">Escrow Deposited Mills</span>
+            </div>
+          </div>
+
+          {/* Directory Ledger Table */}
+          <div className="bg-card border border-border rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+              <div>
+                <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-indigo-400" />
+                  APMC Corridor Stakeholders & KYC Ledger
+                </h3>
+                <p className="text-xs text-muted-fg mt-0.5">
+                  Universal registry of farmers, transport operators, and institutional buyers mapped to official mobile CLIs.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={fetchDirectory}
+                  disabled={dirLoading}
+                  className="p-2 rounded-xl border border-border bg-secondary hover:bg-card text-muted-fg hover:text-foreground transition active:scale-95"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${dirLoading ? 'animate-spin text-primary' : ''}`} />
+                </button>
+                <Link
+                  to="/register"
+                  className="px-3 py-1.5 rounded-xl bg-primary text-primary-foreground font-bold text-xs shadow-sm hover:brightness-110 transition flex items-center gap-1.5"
+                >
+                  <span>+ Onboard Stakeholder</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Search and Role Filter Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="w-3.5 h-3.5 text-muted-fg absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search name, phone, village, corridor..."
+                  className="w-full bg-secondary/80 border border-border rounded-xl pl-8 pr-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary"
+                />
+              </div>
+
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+                {['ALL', 'FARMER', 'DRIVER', 'BUYER', 'ADMIN'].map((rf) => (
+                  <button
+                    key={rf}
+                    onClick={() => setDirFilter(rf)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition shrink-0 ${
+                      dirFilter === rf
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-secondary text-muted-fg border-border hover:text-foreground'
+                    }`}
+                  >
+                    {rf}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border text-left text-muted-fg">
+                    <th className="pb-3 px-3 font-semibold">Stakeholder / Enterprise</th>
+                    <th className="pb-3 px-3 font-semibold">Role</th>
+                    <th className="pb-3 px-3 font-semibold">Contact CLI</th>
+                    <th className="pb-3 px-3 font-semibold">Location / Corridor / Fleet</th>
+                    <th className="pb-3 px-3 font-semibold">Verification Channel</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border/60">
+                  {directory.users
+                    .filter((u) => {
+                      if (dirFilter !== 'ALL' && u.role !== dirFilter) return false;
+                      if (!searchQuery) return true;
+                      const q = searchQuery.toLowerCase();
+                      return (
+                        (u.name || '').toLowerCase().includes(q) ||
+                        (u.phone || '').toLowerCase().includes(q) ||
+                        (u.village || '').toLowerCase().includes(q) ||
+                        (u.route || '').toLowerCase().includes(q) ||
+                        (u.company_name || '').toLowerCase().includes(q)
+                      );
+                    })
+                    .map((u, i) => (
+                      <tr key={i} className="hover:bg-secondary/40 transition">
+                        <td className="py-3 px-3">
+                          <span className="font-bold text-foreground block">
+                            {u.company_name ? `${u.company_name} (${u.name})` : u.name}
+                          </span>
+                          {u.khet_pin && (
+                            <span className="font-mono text-[10px] text-primary">KhetPin: {u.khet_pin}</span>
+                          )}
+                          {u.gstin && (
+                            <span className="font-mono text-[10px] text-amber-500">GSTIN: {u.gstin}</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${
+                            u.role === 'FARMER'
+                              ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                              : u.role === 'DRIVER'
+                              ? 'bg-blue-500/15 text-blue-400 border-blue-500/30'
+                              : u.role === 'BUYER'
+                              ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                              : 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30'
+                          }`}>
+                            {u.role}
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-mono text-muted-fg font-semibold">
+                          {u.phone}
+                        </td>
+                        <td className="py-3 px-3 text-muted-fg">
+                          {u.vehicle_number ? (
+                            <span>{u.vehicle_model} &bull; <strong className="text-foreground">{u.vehicle_number}</strong></span>
+                          ) : u.route ? (
+                            <span>{u.route}</span>
+                          ) : u.location ? (
+                            <span>{u.location}</span>
+                          ) : (
+                            <span>{u.village || 'Azadpur APMC Grid'}</span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25">
+                            <ShieldCheck className="w-3 h-3" />
+                            {u.role === 'FARMER' ? 'Caller CLI Auto-Verified' : 'Official KYC Locked'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

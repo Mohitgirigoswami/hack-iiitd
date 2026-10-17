@@ -17,7 +17,9 @@ from core.database import (
     get_user, get_or_create_user, update_user_telegram, get_user_lots,
     get_all_lots, get_lot_by_id, create_lot, update_lot_quantity,
     update_lot_status, delete_lot, get_backhaul_schedules, create_backhaul_schedule,
-    get_notifications, add_activity
+    get_notifications, add_activity, register_driver, register_buyer,
+    verify_user_credentials, get_all_drivers, get_all_buyers,
+    get_stakeholders_directory, schedule_backhaul_date_db
 )
 from core.notifications import send_dual_channel_alert, link_telegram, fetch_notifications
 from state_manager import state
@@ -221,21 +223,96 @@ def handle_call_keypad():
             "audio_base64": audio_b64
         })
     elif digit == "3":
-        # Stock management summary via keypad
+        # Stock management menu via keypad
         user_lots = get_user_lots(caller_phone)
         total_qtl = sum(l["quantity_quintals"] for l in user_lots)
-        hindi_reply = f"{farmer_name} जी, आपके खाते में कुल {len(user_lots)} लॉट ({total_qtl} क्विंटल) दर्ज हैं। स्टॉक बदलने के लिए वेब पोर्टल पर जाएं।"
+        hindi_reply = f"{farmer_name} जी, आपके खाते में कुल {len(user_lots)} लॉट ({total_qtl} क्विंटल) दर्ज हैं। स्टॉक 1 क्विंटल बढ़ाने के लिए 31 दबाएं। 1 क्विंटल घटाने के लिए 32 दबाएं। लॉट हटाने के लिए 33 दबाएं।"
         audio_bytes = generate_hindi_audio(hindi_reply)
         audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
-            "status": "STOCK_FETCHED",
+            "status": "STOCK_SUBMENU",
             "digit": "3",
             "user_lots": user_lots,
             "voice_prompt_hi": hindi_reply,
             "audio_base64": audio_b64
         })
+    elif digit == "31":
+        # Multi-key 31: Increment stock by 1 quintal
+        user_lots = get_user_lots(caller_phone)
+        if user_lots:
+            target_lot = user_lots[0]
+            updated = update_lot_quantity(target_lot["lot_id"], target_lot["quantity_quintals"] + 1.0)
+            hindi_reply = f"{farmer_name} जी, आपका लॉट 1 क्विंटल बढ़ा दिया गया है। कुल {updated['quantity_quintals']} क्विंटल ({updated['bags_count']} बोरी) दर्ज हो गया है।"
+            send_dual_channel_alert(
+                phone=caller_phone,
+                title="Stock Increased (+1 Qtl) 📦",
+                message=f"Phone Call IVR Key 31: Lot #{target_lot['lot_id']} updated to {updated['quantity_quintals']} Qtl ({updated['bags_count']} bags).",
+                hindi_voice_text=hindi_reply
+            )
+        else:
+            lot = create_lot(caller_phone, "Mustard", 4.0, channel="ivr_call")
+            hindi_reply = f"{farmer_name} जी, 4 क्विंटल सरसों का नया लॉट जोड़ दिया गया है।"
+            updated = lot
+        audio_bytes = generate_hindi_audio(hindi_reply)
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
+        return jsonify({
+            "status": "STOCK_INCREASED",
+            "digit": "31",
+            "lot": updated,
+            "voice_prompt_hi": hindi_reply,
+            "audio_base64": audio_b64
+        })
+    elif digit == "32":
+        # Multi-key 32: Decrement stock by 1 quintal
+        user_lots = get_user_lots(caller_phone)
+        if user_lots:
+            target_lot = user_lots[0]
+            new_qty = max(1.0, target_lot["quantity_quintals"] - 1.0)
+            updated = update_lot_quantity(target_lot["lot_id"], new_qty)
+            hindi_reply = f"{farmer_name} जी, आपका लॉट 1 क्विंटल घटा दिया गया है। अब कुल {updated['quantity_quintals']} क्विंटल दर्ज है।"
+            send_dual_channel_alert(
+                phone=caller_phone,
+                title="Stock Decreased (-1 Qtl) 📦",
+                message=f"Phone Call IVR Key 32: Lot #{target_lot['lot_id']} reduced to {updated['quantity_quintals']} Qtl ({updated['bags_count']} bags).",
+                hindi_voice_text=hindi_reply
+            )
+        else:
+            updated = None
+            hindi_reply = f"{farmer_name} जी, घटाने के लिए कोई सक्रिय लॉट नहीं मिला।"
+        audio_bytes = generate_hindi_audio(hindi_reply)
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
+        return jsonify({
+            "status": "STOCK_DECREASED",
+            "digit": "32",
+            "lot": updated,
+            "voice_prompt_hi": hindi_reply,
+            "audio_base64": audio_b64
+        })
+    elif digit == "33":
+        # Multi-key 33: Delete / cancel lot completely with 0 penalty
+        user_lots = get_user_lots(caller_phone)
+        if user_lots:
+            target_lot = user_lots[0]
+            delete_lot(target_lot["lot_id"])
+            hindi_reply = f"{farmer_name} जी, आपका लॉट #{target_lot['lot_id']} गाड़ी पूलिंग से हटा दिया गया है। शून्य पेनाल्टी लागू है।"
+            send_dual_channel_alert(
+                phone=caller_phone,
+                title="Lot Removed (₹0 Penalty) ❌",
+                message=f"Phone Call IVR Key 33: Lot #{target_lot['lot_id']} deferred and cancelled with zero penalty.",
+                hindi_voice_text=hindi_reply
+            )
+        else:
+            hindi_reply = f"{farmer_name} जी, हटाने के लिए कोई सक्रिय लॉट नहीं मिला।"
+        audio_bytes = generate_hindi_audio(hindi_reply)
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
+        return jsonify({
+            "status": "LOT_CANCELLED",
+            "digit": "33",
+            "voice_prompt_hi": hindi_reply,
+            "audio_base64": audio_b64
+        })
     else:
-        hindi_reply = "कृपया सही बटन दबाएं। मंडी भाव के लिए 1, गाड़ी पूलिंग के लिए 2, स्टॉक के लिए 3।"
+        hindi_reply = "कृपया सही बटन दबाएं। मंडी भाव के लिए 1, गाड़ी पूलिंग के लिए 2, स्टॉक बदलने के लिए 3।"
         audio_bytes = generate_hindi_audio(hindi_reply)
         audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
@@ -588,6 +665,205 @@ def get_backhaul_manifest():
         "farmer_forward_freight_slashed_rs": 450,
         "deadhead_km_saved": 65,
         "khali_phera_eliminated": True
+    })
+
+# --- Multi-Stakeholder Auth, Onboarding & Directory Routes ---
+
+@app.route("/api/auth/register-driver", methods=["POST"])
+def auth_register_driver():
+    data = request.get_json(silent=True) or {}
+    phone = data.get("phone", "+91 94160 88219").strip()
+    name = data.get("name", "Baljit Singh").strip()
+    v_model = data.get("vehicle_model", "Mahindra Bolero Pickup (1.5T)")
+    v_number = data.get("vehicle_number", "HR-12-AE-8419").strip()
+    route = data.get("route", "Rohtak ➔ Azadpur APMC")
+    license_num = data.get("license_number", "DL-042018009214")
+    pin = data.get("pin_code", "1234")
+    tg = data.get("telegram_username", "")
+
+    user = register_driver(
+        phone=phone, name=name, vehicle_model=v_model,
+        vehicle_number=v_number, route=route,
+        license_number=license_num, pin_code=pin, telegram=tg
+    )
+    send_dual_channel_alert(
+        phone=phone,
+        title="Driver Account Onboarded 🚚",
+        message=f"Welcome {name}! Bolero Pickup ({v_number}) registered on corridor {route}. Passcode: {pin}.",
+        hindi_voice_text=f"नमस्ते {name} जी! आपकी गाड़ी {v_number} खेतOS में रजिस्टर हो गई है।"
+    )
+    return jsonify({"status": "SUCCESS", "user": user})
+
+@app.route("/api/auth/register-buyer", methods=["POST"])
+def auth_register_buyer():
+    data = request.get_json(silent=True) or {}
+    phone = data.get("phone", "+91 98111 22334").strip()
+    c_name = data.get("company_name", "Shree Ram Flour & Oil Mill").strip()
+    rep_name = data.get("representative_name", "Anil Singhal").strip()
+    gstin = data.get("gstin", "07AAAAA0000A1Z5").strip()
+    loc = data.get("location", "Lawrence Road Industrial Area, Delhi").strip()
+    crop = data.get("target_crop", "Mustard (सरसों)").strip()
+    pin = data.get("pin_code", "1234")
+    tg = data.get("telegram_username", "")
+
+    user = register_buyer(
+        phone=phone, company_name=c_name, representative_name=rep_name,
+        gstin=gstin, location=loc, target_crop=crop, pin_code=pin, telegram=tg
+    )
+    send_dual_channel_alert(
+        phone=phone,
+        title="Buyer Escrow Account Activated 🏢",
+        message=f"{c_name} (GSTIN: {gstin}) onboarded for {crop}. Sourcing Hub: {loc}.",
+        hindi_voice_text=f"नमस्ते {rep_name} जी! {c_name} का एस्क्रो अकाउंट सक्रिय हो गया है।"
+    )
+    return jsonify({"status": "SUCCESS", "user": user})
+
+@app.route("/api/auth/login", methods=["POST"])
+def auth_login():
+    data = request.get_json(silent=True) or {}
+    phone = data.get("phone", "").strip()
+    pin = data.get("pin", "").strip()
+    role = data.get("role")
+
+    user, err = verify_user_credentials(phone, pin, role)
+    if err:
+        return jsonify({"status": "ERROR", "message": err}), 401
+    return jsonify({"status": "SUCCESS", "user": user})
+
+@app.route("/api/drivers", methods=["GET"])
+def get_drivers_route():
+    drivers = get_all_drivers()
+    return jsonify({"status": "SUCCESS", "drivers": drivers})
+
+@app.route("/api/buyers", methods=["GET"])
+def get_buyers_route():
+    buyers = get_all_buyers()
+    return jsonify({"status": "SUCCESS", "buyers": buyers})
+
+@app.route("/api/stakeholders/directory", methods=["GET"])
+def get_stakeholders_directory_route():
+    directory = get_stakeholders_directory()
+    return jsonify({"status": "SUCCESS", "directory": directory})
+
+# --- Reverse Backhaul Date Pooling Route ---
+
+@app.route("/api/backhaul/pool-date", methods=["POST"])
+def pool_backhaul_date_route():
+    data = request.get_json(silent=True) or {}
+    date_str = data.get("pickup_date", "Tomorrow, 02:30 PM (24h Prior Plan)")
+    capacity_kg = float(data.get("capacity_kg", 1500))
+    cargo_items = data.get("cargo_items")
+    phone = data.get("transporter_phone", "+91 94160 88219")
+
+    sched_id = schedule_backhaul_date_db(date_str, capacity_kg, cargo_items, phone)
+    return jsonify({
+        "status": "SUCCESS",
+        "schedule_id": sched_id,
+        "message": f"Backhaul return trip scheduled for {date_str} (0% Khali Phera locked)."
+    })
+
+# --- Interactive Telegram Bot Command Route ---
+
+@app.route("/api/telegram/bot/command", methods=["POST"])
+def telegram_bot_command():
+    data = request.get_json(silent=True) or {}
+    phone = data.get("phone", "+91 98123 45099").strip()
+    command_text = data.get("text", "").strip()
+
+    user = get_user(phone)
+    if not user:
+        user = get_or_create_user(phone, name="Kisan Mitra")
+
+    farmer_name = user["name"]
+    khet_pin = user.get("khet_pin", "HR-ROH-91P2")
+    village = user.get("village", "Bhalaut")
+
+    # Command Router
+    parts = command_text.split()
+    cmd = parts[0].lower() if parts else "/help"
+
+    if cmd in ["/start", "/help"]:
+        reply = (
+            f"🌾 नमस्ते {farmer_name} जी!\n"
+            f"KhetOS (खेतOS) किसान सहायता बॉट में आपका स्वागत है।\n\n"
+            f"📍 आपका खेतपिन: `{khet_pin}` ({village})\n"
+            f"📱 फोन CLI: `{phone}` (स्वचालित प्रमाणित)\n\n"
+            f"उपलब्ध कमांड्स:\n"
+            f"• `/mandi` - आज का मंडी भाव (आज़ादपुर vs स्थानीय)\n"
+            f"• `/mystock` - आपके सक्रिय लॉट और बोरी विवरण\n"
+            f"• `/addlot [मात्रा]` - नया लॉट जोड़ें (उदा. `/addlot 4`)\n"
+            f"• `/modlot [lot_id] [मात्रा]` - स्टॉक अपडेट करें\n"
+            f"• `/dellot [lot_id]` - लॉट हटाएं (₹0 पेनाल्टी)\n"
+            f"• `/accept [lot_id]` - पिकअप स्वीकार करें\n"
+            f"• `/reject [lot_id]` - पिकअप रद्द करें"
+        )
+    elif cmd == "/mandi":
+        p = get_mandi_price("Mustard")
+        reply = (
+            f"📈 आज़ादपुर APMC मंडी भाव:\n"
+            f"• फसल: सरसों (Mustard)\n"
+            f"• मॉडल भाव: ₹{p['modal_price']} / क्विंटल\n"
+            f"• भाव सीमा: ₹{p['min_price']} - ₹{p['max_price']}\n"
+            f"• स्थानीय आढ़ती भाव: ₹4,700\n"
+            f"✅ खेतOS पूलिंग से सीधा लाभ: +₹{p['modal_price'] - 4700}/क्विंटल"
+        )
+    elif cmd == "/mystock":
+        lots = get_user_lots(phone)
+        if not lots:
+            reply = f"ℹ️ {farmer_name} जी, आपके खाते में अभी कोई सक्रिय लॉट नहीं है। नया लॉट जोड़ने के लिए `/addlot 4` लिखें।"
+        else:
+            lines = [f"📦 आपके सक्रिय लॉट ({len(lots)}):"]
+            for l in lots:
+                lines.append(f"• #{l['lot_id']}: {l['crop']} - {l['quantity_quintals']} Qtl ({l['bags_count']} बोरी) | स्थिति: {l['status']}")
+            reply = "\n".join(lines)
+    elif cmd == "/addlot":
+        qty = float(parts[1]) if len(parts) > 1 else 4.0
+        crop = parts[2] if len(parts) > 2 else "Mustard"
+        lot = create_lot(phone, crop, qty, channel="telegram_bot")
+        reply = f"✅ बधाई! लॉट #{lot['lot_id']} ({qty} क्विंटल {crop}) दर्ज हो गया है। 50kg की {lot['bags_count']} बोरियां बोलेरो पूल में शामिल हैं।"
+    elif cmd == "/modlot":
+        if len(parts) >= 3:
+            lot_id = parts[1]
+            qty = float(parts[2])
+            updated = update_lot_quantity(lot_id, qty)
+            reply = f"✅ लॉट #{lot_id} अपडेट हो गया: अब {updated['quantity_quintals']} क्विंटल ({updated['bags_count']} बोरी) दर्ज है।"
+        else:
+            reply = "⚠️ कृपया सही प्रारूप लिखें: `/modlot [lot_id] [नया_क्विंटल]`"
+    elif cmd == "/dellot":
+        if len(parts) >= 2:
+            lot_id = parts[1]
+            success = delete_lot(lot_id)
+            if success:
+                reply = f"✅ लॉट #{lot_id} हटा दिया गया है। ₹0 पेनाल्टी सुरक्षित है।"
+            else:
+                reply = f"⚠️ लॉट #{lot_id} नहीं मिला।"
+        else:
+            reply = "⚠️ कृपया सही प्रारूप लिखें: `/dellot [lot_id]`"
+    elif cmd == "/accept":
+        user_lots = get_user_lots(phone)
+        lot_id = parts[1] if len(parts) > 1 else (user_lots[0]["lot_id"] if user_lots else None)
+        if lot_id:
+            update_lot_status(lot_id, "ACCEPTED")
+            reply = f"✅ लॉट #{lot_id} का पिकअप स्वीकार कर लिया गया है। बोलेरो पिकअप लॉक हो गया है।"
+        else:
+            reply = "⚠️ कोई लॉट नहीं मिला।"
+    elif cmd == "/reject":
+        user_lots = get_user_lots(phone)
+        lot_id = parts[1] if len(parts) > 1 else (user_lots[0]["lot_id"] if user_lots else None)
+        if lot_id:
+            update_lot_status(lot_id, "REJECTED_BY_FARMER")
+            reply = f"✅ लॉट #{lot_id} का पिकअप रद्द कर दिया गया है। ₹0 पेनाल्टी लागू है।"
+        else:
+            reply = "⚠️ कोई लॉट नहीं मिला।"
+    else:
+        reply = f"अनजान कमांड `{command_text}`। उपलब्ध कमांड्स देखने के लिए `/help` लिखें।"
+
+    return jsonify({
+        "status": "SUCCESS",
+        "command": command_text,
+        "reply": reply,
+        "farmer_name": farmer_name,
+        "phone": phone
     })
 
 if __name__ == "__main__":

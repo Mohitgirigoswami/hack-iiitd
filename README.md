@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="client/public/khetos-logo.png" alt="KhetOS Logo" width="130" style="border-radius: 28px;" />
+</p>
+
 # 🌾 KhetOS (खेतOS)
 ### *The Farm-Gate Operating System: From Kaccha Rasta to Pucca Mandi*
 
@@ -65,29 +69,70 @@ flowchart TD
 
 ## ⚡ Core Platform Capabilities
 
-### 1. Toll-Free IVR Telephony Gateway (`/call`)
+### 1. Toll-Free IVR Telephony Gateway & Multi-Key DTMF Tree (`/call`)
 * **Zero Smartphone Barrier:** Operational over basic feature phones via standard dual-tone multi-frequency (DTMF) dialpad inputs.
 * **Natural Hindi Neural Speech:** Integrated with high-fidelity Microsoft Azure Neural Voice (`hi-IN-MadhurNeural`) and Google TTS fallback, delivering human-like voice prompts with authentic regional intonation.
-* **One-Touch Booking:** Farmers dial `1800-KHET-OS`, hear prevailing APMC Azadpur mandi rates, and press **Key 2** to instantly bind their micro-lot to an active corridor truck.
+* **Pure Zero-App Farmer Model:** Smallholders **never sign up on web forms**. Auto-authentication is performed 100% via incoming **Caller Line Identification (CLI)** (e.g., `+91 98123 45099` ➔ Ramu Sharma, KhetPin `HR-ROH-78G4`).
+* **Multi-Key DTMF Keypad Tree:**
+  ```
+  [Toll-Free 1800-KHET-OS]
+  ├── Key 1: Mandi Modal Rates (Azadpur APMC ₹5,420 vs Village Gate ₹4,700)
+  ├── Key 2: Instant 1-Touch Bolero Pickup Pooling (Auto-fill truck to 100%)
+  ├── Key 3: Stock Management Submenu (Dynamic Quantity & Lot Lifecycle)
+  │    ├── Key 31: Increment Stock (+1 Qtl / 2 Bags)
+  │    ├── Key 32: Decrement Stock (-1 Qtl / 2 Bags)
+  │    └── Key 33: Cancel / Delete Lot (₹0 Penalty Deferral)
+  ├── Key 4: Micro-Corridor Weather Advisory (Open-Meteo rain risk & tarpaulin)
+  └── Key *: Return to Main Menu
+  ```
 
-### 2. Discrete 50kg-Bag Knapsack Optimization Engine
+### 2. Vernacular Telegram Kisan Bot (`@khetos_bot`)
+* **Dual-Channel Mirroring:** Every telephony action is mirrored instantly in real-time to the farmer's Telegram bot terminal.
+* **Zero Authentication Friction:** Auto-bound to the farmer's verified mobile CLI.
+* **Conversational Command Set:**
+  * `/start` or `/help` — Welcomes farmer in Hindi with KhetPin and available menu.
+  * `/mandi` — Returns today's live modal prices for Mustard, Wheat, and Paddy.
+  * `/mystock` — Queries active registered lots, quintals, and 50kg bag allocations.
+  * `/addlot [qtl]` — Declares new harvest lot (e.g. `/addlot 4` creates 8 bags).
+  * `/modlot [lot_id] [qtl]` — Dynamically updates bag quantity.
+  * `/dellot [lot_id]` — Cancels/removes lot from vehicle queue with ₹0 penalty.
+  * `/accept [lot_id]` — Confirms scheduled transporter pickup.
+  * `/reject [lot_id]` — Postpones pickup without platform demerits.
+
+### 3. Discrete 50kg-Bag Knapsack Optimization Engine
 * **Physical-to-Digital Integrity:** Prevents grain lot contamination by modeling loads as discrete **50kg gunny bags (*bori*)** rather than continuous bulk volume.
 * **Corridor Consolidation:** Aggregates fractional loads (e.g., Suresh: 12 bags, Dinesh: 10 bags, Ramu: 8 bags) to reach **100% payload capacity (1,500 kg / 30 bags)** on standard rural transport vehicles (Mahindra Bolero Maxi Truck).
 * **Zero Lot Fragmentation:** Bags are stenciled per farmer and physically segregated by tarpaulin bulkheads in the vehicle bay.
 
-### 3. Pre-Loading Quality Gatekeeper (`/driver`)
+### 4. Reverse Backhaul Date & Capacity Pooling (*0% Khali Phera*)
+* **1-Day Prior Return Trip Scheduling:** Transporters and cooperative buyers notify available return capacity 24 hours in advance via `/api/backhaul/pool-date`.
+* **Agronomy Ingestion Cargo:** Return trips carry wholesale feed cake (*Pashu Aahar* from oil mills), subsidized IFFCO Urea, and ICAR certified seeds directly to Village Primary Agricultural Cooperative Societies (PACS).
+* **Balanced Run Economics:**
+  * **65 km deadhead mileage eliminated.**
+  * **+₹850 additional net earnings** per round trip for rural transporters.
+  * **30% reduction** in farmer forward freight (slashed from ₹640 to ₹450/lot).
+
+### 5. Multi-Stakeholder Onboarding & KYC Gateway (`/register` & `/login`)
+* **Transporter KYC Onboarding:** Drivers register commercial vehicle model (Bolero 1.5T, Tata 407, Dost), commercial plate number, driving license, assigned corridor, and 4-digit PIN.
+* **Institutional Processor Onboarding:** Processing mills (flour mills, expellers) register entity name, GSTIN, processing hub location, target crop, and 4-digit PIN.
+* **Demo Fast-Gates:** Instant 1-click test access for hackathon judges:
+  * Baljit Singh (Driver, `+91 94160 88219`, PIN: `1234`)
+  * Shree Ram Flour & Oil Mill (Buyer, `+91 98111 22334`, PIN: `1234`)
+  * Dr. Vivek Swaminathan (APMC Director, `+91 11 2769 1100`, PIN: `2026`)
+
+### 6. Pre-Loading Quality Gatekeeper (`/driver`)
 * **Transporter-Led Verification:** Equips corridor drivers with a mandatory 3-point digital gatekeeping checklist before loading:
   1. *Bag Packaging:* Double-stitched standard gunny bags with visible farmer ID stencil.
   2. *Visual Purity:* Absence of stones, chaff, or insect infestation.
   3. *Tactile Moisture Rub:* Grains snap cleanly under thumb pressure (<8% moisture).
 * **₹0 Sun-Drying Deferral:** If damp grain is detected at the farm gate, the lot is deferred for on-farm sun drying at **₹0 penalty**, eliminating downstream mandi rejection and wasted transit freight.
 
-### 4. Institutional Wholesale Escrow (`/buyer`)
-* **Advance Custody Lock:** Wholesale institutional buyers (processors, oil expellers) deposit a **20% advance escrow via Razorpay** before transporter dispatch authorization.
+### 7. Institutional Wholesale Escrow (`/buyer`)
+* **Advance Custody Lock:** Wholesale institutional buyers deposit a **20% advance escrow via Razorpay** before transporter dispatch authorization.
 * **Default Protection:** If a buyer cancels while cargo is in transit, the 20% escrow is forfeited to cover 100% of driver round-trip freight plus farmer distress compensation.
 * **Weighbridge Settlement:** Payouts release automatically upon physical dock arrival against the official APMC digital weighbridge slip (*Kanta Parchi*).
 
-### 5. ICAR Chemical & Disease Advisory Doctor (`/farmer`)
+### 8. ICAR Chemical & Disease Advisory Doctor (`/farmer`)
 * **Deterministic Prescription Engine:** Replaces predatory ₹1,200 branded chemical cocktails with ICAR-certified ₹200 generic chemical salts (e.g. *Mancozeb 75% WP* for White Rust in Mustard).
 * **Zero LLM Dosage Hallucinations:** Chemical salts, dilution ratios, and Pre-Harvest Intervals (PHI) are strictly validated against official ICAR Package of Practices.
 * **Vernacular Audio Output:** Automatically synthesizes actionable Hindi voice notes for illiterate smallholders.
@@ -100,11 +145,12 @@ KhetOS provides unified, role-based interfaces styled in our signature **Obsidia
 
 | Persona | Route | Primary Responsibility |
 | :--- | :--- | :--- |
-| **APMC Mandi Admin** | `/admin` | Live 30-bag flatbed cargo matrix telemetry, corridor capacity tracking, and fleet dispatch locks. |
-| **Smallholder Farmer** | `/farmer` | Active corridor truck pooling status, live Agmarknet benchmark rates, and ICAR advisory doctor. |
-| **Corridor Transporter** | `/driver` | PMGSY dirt road navigation, multi-stop manifest, and 3-point digital pre-loading quality gate. |
-| **Wholesale Buyer** | `/buyer` | Knapsack RFQ corridor matching, single-origin procurement, and 20% advance Razorpay custody lock. |
-| **IVR Telephony Studio** | `/call` | Standalone virtual telephone simulator with real DTMF dual-tone audio and natural Hindi speech. |
+| **APMC Mandi Admin** | `/dashboard` (Admin) | Live 30-bag flatbed cargo matrix telemetry, fleet dispatch locks, and Stakeholder KYC Directory. |
+| **Smallholder Farmer** | `/dashboard` (Farmer) | Active corridor truck pooling status, live Agmarknet benchmark rates, and Vernacular Telegram Bot. |
+| **Corridor Transporter** | `/dashboard` (Driver) | PMGSY dirt road navigation, 3-point quality gate, and 1-Day Prior Return Date Pooling (0% Khali Phera). |
+| **Institutional Buyer** | `/dashboard` (Buyer) | Knapsack RFQ corridor matching, single-origin procurement, and 20% advance Razorpay custody lock. |
+| **IVR Telephony Studio** | `/call` | Virtual feature phone console with real DTMF dual-tone audio, Key 3 stock submenu, and Azure Hindi speech. |
+| **Stakeholder Auth Gateway**| `/login` / `/register` | KYC onboarding for transporters and processors with instant demo fast-gates. |
 
 ---
 

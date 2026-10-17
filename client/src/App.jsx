@@ -7,6 +7,9 @@ import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import CallSimulator from './pages/CallSimulator';
 
+import AuthPage from './pages/AuthPage';
+import ErrorBoundary from './components/ErrorBoundary';
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -18,12 +21,16 @@ export default function App() {
 
             {/* Dynamic Application Routing */}
             <main className="flex-1 pb-16">
-              <Routes>
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/call" element={<CallSimulator />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
+              <ErrorBoundary>
+                <Routes>
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/call" element={<CallSimulator />} />
+                  <Route path="/login" element={<AuthPage initialTab="signin" />} />
+                  <Route path="/register" element={<AuthPage initialTab="driver" />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </ErrorBoundary>
             </main>
 
             {/* Professional Footer */}

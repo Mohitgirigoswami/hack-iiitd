@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { 
   Truck, CheckCircle2, XCircle, MapPin, ShieldAlert, AlertTriangle, 
   ArrowRight, CloudRain, Volume2, Package, Repeat, Sparkles, Navigation, 
-  Thermometer, Wind, Check
+  Thermometer, Wind, Check, Sun, Calendar, Clock, RefreshCw
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 
 export default function DriverView({ state, onRefresh }) {
-  const { activeRole } = useRole();
+  const { activeRole, setCustomPhone } = useRole();
   const [selectedLotId, setSelectedLotId] = useState(null);
   const [activeRunTab, setActiveRunTab] = useState('outbound'); // 'outbound' | 'backhaul'
   const [weather, setWeather] = useState(null);
@@ -22,6 +22,16 @@ export default function DriverView({ state, onRefresh }) {
   const [submitting, setSubmitting] = useState(false);
   const [lastActionMsg, setLastActionMsg] = useState(null);
 
+  // Fleet switcher state
+  const [driversList, setDriversList] = useState([]);
+  const [selectedDriverPhone, setSelectedDriverPhone] = useState(activeRole?.phone || '+91 94160 88219');
+
+  // Reverse Backhaul Date Pooling State
+  const [poolDate, setPoolDate] = useState('Tomorrow, 02:30 PM (24h Prior)');
+  const [poolCapacityKg, setPoolCapacityKg] = useState(1500);
+  const [poolingDate, setPoolingDate] = useState(false);
+  const [poolSuccessMsg, setPoolSuccessMsg] = useState(null);
+
   const lots = state?.lots || [];
   const pool = state?.active_pool || {};
 
@@ -30,7 +40,46 @@ export default function DriverView({ state, onRefresh }) {
   useEffect(() => {
     fetchWeather();
     fetchBackhaul();
+    fetchDrivers();
   }, []);
+
+  const fetchDrivers = async () => {
+    try {
+      const res = await fetch('/api/drivers');
+      if (res.ok) {
+        const data = await res.json();
+        setDriversList(data.drivers || []);
+      }
+    } catch (e) {
+      console.warn('Driver fetch error:', e);
+    }
+  };
+
+  const handleScheduleBackhaulDate = async (targetDate = poolDate) => {
+    setPoolingDate(true);
+    setPoolSuccessMsg(null);
+    try {
+      const res = await fetch('/api/backhaul/pool-date', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pickup_date: targetDate,
+          capacity_kg: parseFloat(poolCapacityKg),
+          transporter_phone: selectedDriverPhone
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPoolSuccessMsg(`Return Backhaul trip locked for ${targetDate}. 0% Khali Phera guaranteed!`);
+        setTimeout(() => setPoolSuccessMsg(null), 4000);
+        fetchBackhaul();
+      }
+    } catch (err) {
+      console.error('Date pooling error:', err);
+    } finally {
+      setPoolingDate(false);
+    }
+  };
 
   const fetchWeather = async () => {
     try {
@@ -117,16 +166,34 @@ export default function DriverView({ state, onRefresh }) {
             <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
               <Truck className="w-4 h-4" />
             </div>
-            <h3 className="text-lg font-bold text-foreground">{activeRole.name}</h3>
+            {driversList.length > 0 ? (
+              <select
+                value={selectedDriverPhone}
+                onChange={(e) => {
+                  const phone = e.target.value;
+                  setSelectedDriverPhone(phone);
+                  setCustomPhone(phone);
+                }}
+                className="text-base font-bold text-foreground bg-transparent border-b border-border focus:outline-none focus:border-primary cursor-pointer"
+              >
+                {driversList.map((d) => (
+                  <option key={d.phone} value={d.phone} className="bg-card text-foreground">
+                    {d.name} &bull; {d.vehicle_number || d.vehicle_model}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <h3 className="text-lg font-bold text-foreground">{activeRole.name}</h3>
+            )}
             <span className="text-xs px-2 py-0.5 rounded bg-blue-500/15 text-blue-700 dark:text-blue-400 font-semibold border border-blue-500/30">
               Corridor Transporter
             </span>
           </div>
-          <p className="text-xs text-muted-fg mt-0.5">Vehicle: {activeRole.vehicle} &bull; Reg: {activeRole.regNumber}</p>
+          <p className="text-xs text-muted-fg mt-0.5">Vehicle: {activeRole.vehicle} &bull; CLI: {selectedDriverPhone}</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Live Open-Meteo Weather Badge */}
+          {/* Live Open-Meteo Weather Badge with Lucide Icons */}
           {weather && (
             <div className="flex items-center gap-2.5 bg-secondary/80 px-3.5 py-2 rounded-xl border border-border text-xs">
               <CloudRain className={`w-4 h-4 ${weather.tarpaulin_protocol === 'MANDATORY_TIE_DOWN' ? 'text-amber-400 animate-pulse' : 'text-blue-400'}`} />
@@ -136,12 +203,22 @@ export default function DriverView({ state, onRefresh }) {
                   {weather.temperature_c}°C &bull; Rain Risk: {weather.precipitation_probability_pct}%
                 </span>
               </div>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded border flex items-center gap-1 ${
                 weather.tarpaulin_protocol === 'MANDATORY_TIE_DOWN'
                   ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
                   : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
               }`}>
-                {weather.tarpaulin_protocol === 'MANDATORY_TIE_DOWN' ? 'Tie Down Tarpaulin ⚠️' : 'Dry Transit ☀️'}
+                {weather.tarpaulin_protocol === 'MANDATORY_TIE_DOWN' ? (
+                  <>
+                    <AlertTriangle className="w-3 h-3 text-amber-400" />
+                    <span>Tie Down Tarpaulin</span>
+                  </>
+                ) : (
+                  <>
+                    <Sun className="w-3 h-3 text-emerald-400" />
+                    <span>Dry Transit Optimal</span>
+                  </>
+                )}
               </span>
             </div>
           )}
@@ -366,6 +443,81 @@ export default function DriverView({ state, onRefresh }) {
               <span className="text-[11px] text-muted-fg font-bold uppercase tracking-wider block">Deadhead Mileage Saved</span>
               <span className="text-2xl font-black text-blue-400 mt-1 block">65 KM</span>
               <span className="text-[10px] text-emerald-400 font-semibold">0% Khali Phera (100% Balanced Run)</span>
+            </div>
+          </div>
+
+          {/* 1-Day Prior Date Pooling & Reverse Backhaul Capacity Scheduling Panel */}
+          <div className="bg-card border border-border rounded-2xl p-6 space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-border gap-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-emerald-400" />
+                  <h4 className="text-sm font-bold text-foreground">
+                    1-Day Prior Date Pooling & Return Capacity Scheduling
+                  </h4>
+                </div>
+                <p className="text-xs text-muted-fg mt-0.5">
+                  Transporters pre-schedule return transfer runs to eliminate 100% empty deadhead mileage (0% Khali Phera).
+                </p>
+              </div>
+              <span className="text-[10px] font-mono px-2.5 py-1 bg-emerald-500/15 text-emerald-400 rounded-lg border border-emerald-500/30 font-bold">
+                Capacity: {poolCapacityKg} kg (100% Guaranteed Load)
+              </span>
+            </div>
+
+            {poolSuccessMsg && (
+              <div className="p-3 bg-emerald-500/15 border border-emerald-500/30 rounded-xl text-xs text-emerald-700 dark:text-emerald-400 flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{poolSuccessMsg}</span>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { title: 'Tomorrow, 02:30 PM', sub: '24h Prior Plan', tag: 'Recommended' },
+                { title: 'Saturday, 11:00 AM', sub: 'PACS Bulk Delivery', tag: 'Weekend Run' },
+                { title: 'Monday, 09:00 AM', sub: 'Fertilizer Restock', tag: 'Depot Run' },
+              ].map((p, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setPoolDate(p.title);
+                    handleScheduleBackhaulDate(p.title);
+                  }}
+                  disabled={poolingDate}
+                  className={`p-3.5 rounded-xl border text-left transition flex flex-col justify-between group active:scale-95 ${
+                    poolDate === p.title
+                      ? 'bg-emerald-500/15 border-emerald-500 text-foreground shadow-sm'
+                      : 'bg-secondary/60 border-border hover:border-emerald-500/40 text-muted-fg hover:text-foreground'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-xs font-bold text-foreground group-hover:text-emerald-400 flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                      {p.title}
+                    </span>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-secondary text-primary font-bold">
+                      {p.tag}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-muted-fg mt-2">{p.sub} &bull; 0% Deadhead</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-muted-fg">
+              <span className="flex items-center gap-1.5">
+                <ShieldAlert className="w-3.5 h-3.5 text-primary" />
+                Automatic matching with Shree Ram Mill byproducts & Village Bhalaut PACS Societies.
+              </span>
+              <button
+                onClick={() => handleScheduleBackhaulDate(poolDate)}
+                disabled={poolingDate}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm transition active:scale-95 flex items-center justify-center gap-1.5 shrink-0"
+              >
+                <Repeat className="w-3.5 h-3.5" />
+                {poolingDate ? 'Scheduling Return Trip...' : 'Lock Return Trip Schedule'}
+              </button>
             </div>
           </div>
 

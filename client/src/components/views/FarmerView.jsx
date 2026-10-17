@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { 
   MapPin, Phone, Truck, ShieldAlert, Sparkles, Volume2, Upload, 
   AlertCircle, CheckCircle2, Sprout, Play, Square, Plus, Minus, 
-  X, Check, RefreshCw, Send, MessageSquare, TrendingUp, ShieldCheck
+  X, Check, RefreshCw, Send, MessageSquare, TrendingUp, ShieldCheck, Bot
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
+import TelegramBotSimulator from '../TelegramBotSimulator';
 
 export default function FarmerView({ state, onRefresh }) {
   const { activeRole, customPhone, setCustomPhone } = useRole();
-  const [activeTab, setActiveTab] = useState('pool'); // 'pool' | 'rates' | 'advisory'
+  const [activeTab, setActiveTab] = useState('pool'); // 'pool' | 'rates' | 'advisory' | 'telegram'
   const [prices, setPrices] = useState([]);
   const [advisoryInput, setAdvisoryInput] = useState('सरसों के पत्तों पर सफेद फफूंद (White Rust) और तना सड़न के लक्षण हैं।');
   const [advisoryResult, setAdvisoryResult] = useState(null);
@@ -318,6 +319,21 @@ export default function FarmerView({ state, onRefresh }) {
         >
           <Sparkles className="w-4 h-4" />
           3. ICAR Chemical & Disease Doctor
+        </button>
+
+        <button
+          onClick={() => setActiveTab('telegram')}
+          className={`pb-3 px-4 text-xs font-bold transition border-b-2 flex items-center gap-2 ${
+            activeTab === 'telegram'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-fg hover:text-foreground'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4 text-blue-400" />
+          4. Telegram Vernacular Bot
+          <span className="text-[10px] bg-blue-500/15 text-blue-400 px-1.5 py-0.2 rounded font-bold border border-blue-500/30">
+            Interactive
+          </span>
         </button>
       </div>
 
@@ -683,6 +699,35 @@ export default function FarmerView({ state, onRefresh }) {
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB 4: Interactive Vernacular Telegram Bot Simulator */}
+      {activeTab === 'telegram' && (
+        <div className="space-y-4">
+          <div className="bg-card border border-border rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div>
+              <span className="font-bold text-foreground block">
+                Telegram Vernacular Conversational Terminal
+              </span>
+              <p className="text-muted-fg text-[11px] mt-0.5">
+                Farmers can manage their lot stock, check APMC Mandi modal rates, and accept/reject pickups entirely inside Telegram.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                CLI: {activePhone}
+              </span>
+            </div>
+          </div>
+
+          <TelegramBotSimulator 
+            activePhone={activePhone} 
+            onRefresh={() => {
+              fetchFarmerLots();
+              if (onRefresh) onRefresh();
+            }} 
+          />
         </div>
       )}
 

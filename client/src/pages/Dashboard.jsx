@@ -8,7 +8,7 @@ import BuyerView from '../components/views/BuyerView';
 import AdminView from '../components/views/AdminView';
 
 export default function Dashboard() {
-  const { currentRoleId, ROLES } = useRole();
+  const { currentRoleId, activeRole, ROLES, setRole } = useRole();
   const [state, setState] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -43,7 +43,7 @@ export default function Dashboard() {
     ADMIN: <BarChart3 className="w-5 h-5 text-indigo-400" />,
   };
 
-  const { setRole } = useRole();
+  const role = activeRole || ROLES[currentRoleId] || ROLES.ADMIN;
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6">
@@ -58,7 +58,7 @@ export default function Dashboard() {
               KhetOS Production Console
             </span>
             <h2 className="text-xl font-black text-foreground mt-0.5">
-              {activeRole.name} &bull; <span className="text-primary font-bold">{activeRole.roleLabel}</span>
+              {role.name} &bull; <span className="text-primary font-bold">{role.roleLabel}</span>
             </h2>
           </div>
         </div>

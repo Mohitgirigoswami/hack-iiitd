@@ -18,7 +18,7 @@ def init_db(seed_if_empty=True):
     with get_connection() as conn:
         cursor = conn.cursor()
 
-        # 1. Users table
+        # 1. Users table (Multi-stakeholder: Farmer, Driver, Buyer, Admin)
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
             phone TEXT PRIMARY KEY,
@@ -30,9 +30,31 @@ def init_db(seed_if_empty=True):
             telegram_chat_id TEXT,
             telegram_username TEXT,
             role TEXT DEFAULT 'farmer',
+            vehicle_model TEXT,
+            vehicle_number TEXT,
+            company_name TEXT,
+            gstin TEXT,
+            route TEXT,
+            license_number TEXT,
+            pin_code TEXT DEFAULT '1234',
             created_at TEXT NOT NULL
         );
         """)
+
+        # Migration columns if table already existed
+        for col_name, col_type in [
+            ("vehicle_model", "TEXT"),
+            ("vehicle_number", "TEXT"),
+            ("company_name", "TEXT"),
+            ("gstin", "TEXT"),
+            ("route", "TEXT"),
+            ("license_number", "TEXT"),
+            ("pin_code", "TEXT DEFAULT '1234'")
+        ]:
+            try:
+                cursor.execute(f"ALTER TABLE users ADD COLUMN {col_name} {col_type};")
+            except sqlite3.OperationalError:
+                pass
 
         # 2. Lots table
         cursor.execute("""
@@ -125,23 +147,51 @@ def init_db(seed_if_empty=True):
             cursor.execute("SELECT COUNT(*) AS cnt FROM users;")
             if cursor.fetchone()["cnt"] == 0:
                 seed_initial_data(conn)
+            else:
+                ensure_core_stakeholders(conn)
+
+def get_core_stakeholders_data():
+    return [
+        # Farmers
+        ("+91 98123 45099", "Ramu Sharma", "Najafgarh", "Delhi Rural", "HR-ROH-91P2", "बड़ के पेड़ से नहर की पटरी पकड़ के ट्यूबवेल के सामने आ जाना।", "@ramu_kisan", "farmer", None, None, None, None, None, None, "1234"),
+        ("+91 98123 45001", "Suresh Kumar", "Bhalaut", "Rohtak", "HR-ROH-78G4", "पक्का मोड़ से 800 मीटर कच्चा रास्ता, बिजली के खंभे के पास।", "@suresh_kisan", "farmer", None, None, None, None, None, None, "1234"),
+        ("+91 98123 45002", "Dinesh Chillar", "Kalanaur", "Rohtak", "HR-ROH-62K9", "नहर पुलिया पार करके दाहिनी तरफ 500 मीटर।", "@dinesh_kisan", "farmer", None, None, None, None, None, None, "1234"),
+        # Transporters (Drivers)
+        ("+91 94160 88219", "Baljit Singh", "Rohtak Hub", "Rohtak", "CORR-ROH-DRV1", "Highway bypass depot", "@baljit_driver", "driver", "Mahindra Bolero Pickup (1.5T)", "HR-12-AE-8419", None, None, "Rohtak ➔ Bhalaut ➔ Kalanaur ➔ Azadpur APMC", "DL-042018009214", "1234"),
+        ("+91 98188 33441", "Ravinder Gujjar", "Hapur Hub", "Hapur", "CORR-HPR-DRV2", "Toll plaza depot", "@ravinder_driver", "driver", "Tata 407 (2.5T)", "UP-14-BT-5102", None, None, "Hapur ➔ Meerut ➔ Sahibabad APMC", "DL-072019001248", "1234"),
+        # Institutional Processors (Buyers)
+        ("+91 98111 22334", "Anil Singhal", "Lawrence Road Industrial Area", "Delhi", "BUYER-SRF", "Gate #4 Weighbridge", "@shreeram_buyer", "buyer", None, None, "Shree Ram Flour & Oil Mill", "07AAAAA0000A1Z5", "Direct Farm-Gate Procurement (Mustard)", None, "1234"),
+        ("+91 98222 44556", "Vikramaditya Roy", "Kundli Mega Food Park", "Sonipat", "BUYER-PAT", "Processing Plant #2", "@patanjali_buyer", "buyer", None, None, "Patanjali Agro Processing", "06AABCP9911D1Z2", "North India Corridor Sourcing (Wheat/Mustard)", None, "1234"),
+        # Mandi Authority (Admin)
+        ("+91 11 2769 1100", "Dr. Vivek Swaminathan", "Azadpur APMC Mandi", "Delhi", "APMC-ADMIN", "APMC Secretary Directorate", "@azadpur_apmc", "admin", None, None, "Azadpur Agricultural Produce Market Committee", "07APMC0000A1Z9", "North India Agri-Logistics Grid", None, "2026")
+    ]
+
+def ensure_core_stakeholders(conn):
+    cursor = conn.cursor()
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    for phone, name, vil, dist, kpin, cue, tg, role, vmod, vnum, cname, gstin, route, lic, pin in get_core_stakeholders_data():
+        cursor.execute("""
+        INSERT OR IGNORE INTO users (
+            phone, name, village, district, khet_pin, voice_breadcrumb, 
+            telegram_username, role, vehicle_model, vehicle_number, 
+            company_name, gstin, route, license_number, pin_code, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, (phone, name, vil, dist, kpin, cue, tg, role, vmod, vnum, cname, gstin, route, lic, pin, now))
+    conn.commit()
 
 def seed_initial_data(conn):
     cursor = conn.cursor()
     now = time.strftime("%Y-%m-%d %H:%M:%S")
 
-    # Seed registered demo farmers
-    users_data = [
-        ("+91 98123 45099", "Ramu Sharma", "Najafgarh", "Delhi Rural", "HR-ROH-91P2", "बड़ के पेड़ से नहर की पटरी पकड़ के ट्यूबवेल के सामने आ जाना।", "@ramu_kisan", "farmer"),
-        ("+91 98123 45001", "Suresh Kumar", "Bhalaut", "Rohtak", "HR-ROH-78G4", "पक्का मोड़ से 800 मीटर कच्चा रास्ता, बिजली के खंभे के पास।", "@suresh_kisan", "farmer"),
-        ("+91 98123 45002", "Dinesh Chillar", "Kalanaur", "Rohtak", "HR-ROH-62K9", "नहर पुलिया पार करके दाहिनी तरफ 500 मीटर।", "@dinesh_kisan", "farmer"),
-    ]
-
-    for phone, name, village, district, khet_pin, cue, tg, role in users_data:
+    # Seed registered stakeholders (Farmers, Drivers, Buyers, Admin)
+    for phone, name, vil, dist, kpin, cue, tg, role, vmod, vnum, cname, gstin, route, lic, pin in get_core_stakeholders_data():
         cursor.execute("""
-        INSERT OR REPLACE INTO users (phone, name, village, district, khet_pin, voice_breadcrumb, telegram_username, role, created_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
-        """, (phone, name, village, district, khet_pin, cue, tg, role, now))
+        INSERT OR REPLACE INTO users (
+            phone, name, village, district, khet_pin, voice_breadcrumb, 
+            telegram_username, role, vehicle_model, vehicle_number, 
+            company_name, gstin, route, license_number, pin_code, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+        """, (phone, name, vil, dist, kpin, cue, tg, role, vmod, vnum, cname, gstin, route, lic, pin, now))
 
     # Seed initial active pool (73.3% capacity with Suresh & Dinesh)
     cursor.execute("""
@@ -445,6 +495,124 @@ def get_activity_feed(limit=10):
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM activity_feed ORDER BY id DESC LIMIT ?;", (limit,))
         return [dict(r) for r in cursor.fetchall()]
+
+# --- Multi-Stakeholder Registration & Authentication ---
+
+def register_driver(phone, name, vehicle_model, vehicle_number, route, license_number="DL-042018009214", pin_code="1234", telegram=None):
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    with get_connection() as conn:
+        conn.execute("""
+        INSERT OR REPLACE INTO users (
+            phone, name, village, district, khet_pin, voice_breadcrumb, 
+            telegram_username, role, vehicle_model, vehicle_number, route, 
+            license_number, pin_code, created_at
+        ) VALUES (
+            ?, ?, 'Corridor Hub', 'Rohtak', 'CORR-DRV', 'Vehicle fleet terminal',
+            ?, 'driver', ?, ?, ?, ?, ?, ?
+        );
+        """, (phone, name, telegram, vehicle_model, vehicle_number, route, license_number, pin_code, now))
+        conn.commit()
+    add_activity("DRIVER_ONBOARDED", f"Transporter {name} ({vehicle_model} • {vehicle_number}) registered on corridor {route}.", event_type="driver")
+    return get_user(phone)
+
+def register_buyer(phone, company_name, representative_name, gstin, location, target_crop="Mustard", pin_code="1234", telegram=None):
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    with get_connection() as conn:
+        conn.execute("""
+        INSERT OR REPLACE INTO users (
+            phone, name, village, district, khet_pin, voice_breadcrumb, 
+            telegram_username, role, company_name, gstin, route, 
+            pin_code, created_at
+        ) VALUES (
+            ?, ?, ?, 'APMC Industrial Hub', 'BUYER-ESCROW', 'Processing facility gate',
+            ?, 'buyer', ?, ?, ?, ?, ?
+        );
+        """, (phone, representative_name, location, telegram, company_name, gstin, f"Procuring {target_crop}", pin_code, now))
+        conn.commit()
+    add_activity("BUYER_ONBOARDED", f"Institutional processor {company_name} (GSTIN: {gstin}) onboarded for {target_crop}.", event_type="buyer")
+    return get_user(phone)
+
+def verify_user_credentials(phone, pin, expected_role=None):
+    user = get_user(phone)
+    if not user:
+        return None, "User phone not registered"
+    user_pin = user.get("pin_code") or "1234"
+    if str(pin).strip() != str(user_pin).strip():
+        return None, "Invalid PIN code"
+    if expected_role and user.get("role", "").upper() != str(expected_role).upper():
+        return None, f"User role mismatch: expected {expected_role}"
+    user_copy = dict(user)
+    user_copy["role"] = user_copy.get("role", "farmer").upper()
+    return user_copy, None
+
+def get_all_drivers():
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE LOWER(role) = 'driver' ORDER BY name ASC;")
+        return [dict(r) for r in cursor.fetchall()]
+
+def get_all_buyers():
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE LOWER(role) = 'buyer' ORDER BY name ASC;")
+        return [dict(r) for r in cursor.fetchall()]
+
+def get_stakeholders_directory():
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users ORDER BY role, name ASC;")
+        raw_users = [dict(r) for r in cursor.fetchall()]
+        users = []
+        for u in raw_users:
+            uc = dict(u)
+            uc["role"] = uc.get("role", "farmer").upper()
+            users.append(uc)
+        
+        farmers = [u for u in users if u["role"] == "FARMER"]
+        drivers = [u for u in users if u["role"] == "DRIVER"]
+        buyers = [u for u in users if u["role"] == "BUYER"]
+        admins = [u for u in users if u["role"] == "ADMIN"]
+        
+        return {
+            "total_count": len(users),
+            "counts": {
+                "total": len(users),
+                "farmers": len(farmers),
+                "drivers": len(drivers),
+                "buyers": len(buyers),
+                "admins": len(admins)
+            },
+            "farmers": farmers,
+            "drivers": drivers,
+            "buyers": buyers,
+            "admins": admins,
+            "users": users,
+            "all": users
+        }
+
+def schedule_backhaul_date_db(date_str, capacity_kg=1500, cargo_items=None, transporter_phone="+91 94160 88219"):
+    schedule_id = f"BHL-DATE-{int(time.time())}"
+    now = time.strftime("%Y-%m-%d %H:%M:%S")
+    if cargo_items is None:
+        cargo_items = [
+            {"item": "Pashu Aahar (Mustard Cattle Feed Cake)", "quantity_kg": 500, "destination": "Bhalaut Cooperative"},
+            {"item": "IFFCO Neem-Coated Urea", "quantity_kg": 400, "destination": "PACS Society"}
+        ]
+    booked_kg = sum(c.get("quantity_kg", 0) for c in cargo_items)
+    with get_connection() as conn:
+        conn.execute("""
+        INSERT INTO backhaul_schedules (
+            schedule_id, transporter_phone, vehicle, corridor, pickup_date,
+            available_capacity_kg, booked_capacity_kg, cargo_items_json, status, created_at
+        ) VALUES (
+            ?, ?, 'Mahindra Bolero Maxi Truck (HR-12-AE-8419)',
+            'Azadpur APMC / Processor Hub ➔ Village Bhalaut PACS',
+            ?, ?, ?, ?, 'PLANNED_1_DAY_PRIOR', ?
+        );
+        """, (schedule_id, transporter_phone, date_str, capacity_kg, booked_kg, json.dumps(cargo_items), now))
+        conn.commit()
+    add_activity("BACKHAUL_POOLED", f"Reverse Backhaul scheduled for {date_str} ({booked_kg}/{capacity_kg} kg pooled).", event_type="driver")
+    return schedule_id
 
 def reset_database():
     with get_connection() as conn:
