@@ -168,8 +168,9 @@ export default function LandingPage() {
       </div>
 
       {/* Standalone Route for Calling (Separated Feature Banner) */}
-      <div className="bg-secondary/70 border-2 border-primary/40 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
-        <div className="space-y-2 text-center sm:text-left">
+      <div className="bg-gradient-to-br from-card via-card to-secondary/80 border border-primary/25 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="space-y-2 text-center sm:text-left relative z-10">
           <div className="inline-flex items-center gap-2 text-xs font-bold text-primary uppercase tracking-wider">
             <Phone className="w-4 h-4 animate-bounce" />
             Standalone Telephony Route (/call)
@@ -177,13 +178,13 @@ export default function LandingPage() {
           <h3 className="text-2xl font-black text-foreground">
             Rural 1800-KHET-OS Toll-Free IVR Simulator
           </h3>
-          <p className="text-xs sm:text-sm text-muted-fg max-w-xl">
+          <p className="text-xs sm:text-sm text-muted-fg max-w-xl leading-relaxed">
             Smallholder farmers don't download smartphone apps. Test the interactive telephone keypad simulator on a standalone route. Press <strong className="text-foreground">Key 2</strong> to trigger Ramu's call and fill the Bolero truck live!
           </p>
         </div>
         <button
           onClick={() => navigate('/call')}
-          className="shrink-0 py-3.5 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-sm rounded-xl shadow-glow transition active:scale-95 flex items-center gap-2"
+          className="shrink-0 py-3.5 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-extrabold text-sm rounded-xl shadow-glow transition active:scale-95 flex items-center gap-2 relative z-10"
         >
           <Phone className="w-4 h-4" />
           Launch /call Phone Studio

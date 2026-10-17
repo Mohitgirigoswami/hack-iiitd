@@ -309,9 +309,15 @@ export default function FarmerView({ state, onRefresh }) {
             <div className="p-5 bg-secondary/70 border border-border rounded-xl space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-border">
                 <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                  Diagnosis: {advisoryResult.diagnosis || 'White Rust (Albugo candida)'}
+                  Diagnosis: {typeof advisoryResult.diagnosis === 'object' 
+                    ? (advisoryResult.diagnosis?.disease || 'White Rust (Albugo candida)') 
+                    : (advisoryResult.diagnosis || 'White Rust (Albugo candida)')}
                 </span>
-                <span className="text-xs text-muted-fg font-mono">ICAR Protocol Ref: #ICAR-MUST-2024</span>
+                <span className="text-xs text-muted-fg font-mono">
+                  {typeof advisoryResult.diagnosis === 'object' && advisoryResult.diagnosis?.confidence 
+                    ? `${Math.round(advisoryResult.diagnosis.confidence * 100)}% Confidence` 
+                    : 'ICAR Protocol Ref: #ICAR-MUST-2024'}
+                </span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
@@ -323,7 +329,9 @@ export default function FarmerView({ state, onRefresh }) {
 
                 <div className="p-3 bg-card rounded-lg border border-border">
                   <span className="text-emerald-700 dark:text-emerald-400 font-bold block mb-1">✅ ICAR Approved Generic Salt</span>
-                  <p className="text-foreground font-medium">{advisoryResult.generic_chemical || 'Mancozeb 75% WP or Metalaxyl 8% + Mancozeb 64% WP'}</p>
+                  <p className="text-foreground font-medium">
+                    {advisoryResult.prescription?.chemical_salt || advisoryResult.generic_chemical || 'Mancozeb 75% WP'}
+                  </p>
                   <p className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px] mt-1">Direct Generic Cost: ₹240 per acre (80% Savings)</p>
                 </div>
               </div>
@@ -331,14 +339,14 @@ export default function FarmerView({ state, onRefresh }) {
               <div className="p-3 bg-card rounded-lg border border-border text-xs space-y-1">
                 <span className="font-semibold text-primary block">Official ICAR Dosage & Spray Guidance:</span>
                 <p className="text-muted-fg">
-                  {advisoryResult.dosage || 'Dissolve 2.0g Mancozeb per 1 Liter of clean water (approx. 500g in 200L water per acre). Spray during calm morning hours with standard knapsack flat-fan nozzle.'}
+                  {advisoryResult.prescription?.dosage_hi || advisoryResult.prescription?.dosage || advisoryResult.dosage || 'Dissolve 2.0g Mancozeb per 1 Liter of clean water (approx. 500g in 200L water per acre). Spray during calm morning hours with standard knapsack flat-fan nozzle.'}
                 </p>
               </div>
 
-              {advisoryResult.audio_prescription_hi && (
+              {(advisoryResult.audio_prescription_hi || advisoryResult.spoken_text_hi || advisoryResult.audio_base64) && (
                 <div className="flex items-center gap-2 p-2.5 bg-primary/20 rounded-lg border border-primary/30 text-xs text-primary">
                   <Volume2 className="w-4 h-4 shrink-0 animate-pulse" />
-                  <span>Vernacular Audio Prescription generated in Hindi for feature-phone playback.</span>
+                  <span>Vernacular Audio Prescription: "{advisoryResult.spoken_text_hi || 'Audio prescription ready in Hindi'}"</span>
                 </div>
               )}
             </div>

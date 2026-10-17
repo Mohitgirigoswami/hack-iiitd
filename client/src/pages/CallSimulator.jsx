@@ -150,13 +150,13 @@ export default function CallSimulator() {
         >
           <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </button>
-        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-primary/20 text-primary border border-primary/30">
+        <span className="text-xs font-bold px-2.5 py-1 rounded-lg bg-primary/10 text-primary border border-primary/25">
           Dedicated Telephony Route (/call)
         </span>
       </div>
 
       {/* Main Feature Phone Chassis */}
-      <div className="bg-card border-2 border-border rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-w-md mx-auto relative overflow-hidden transition-colors">
+      <div className="bg-card border border-border/80 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6 max-w-md mx-auto relative overflow-hidden transition-colors">
         {/* Phone Earpiece Speaker Notch */}
         <div className="w-20 h-3.5 bg-secondary rounded-full mx-auto flex items-center justify-center">
           <div className="w-8 h-1 bg-border rounded-full" />
