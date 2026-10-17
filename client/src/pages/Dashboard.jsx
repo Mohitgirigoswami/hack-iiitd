@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, User } from 'lucide-react';
+import { ArrowLeft, User, Sprout, Truck, Building2, BarChart3 } from 'lucide-react';
 import { useRole } from '../context/RoleContext';
 import FarmerView from '../components/views/FarmerView';
 import DriverView from '../components/views/DriverView';
@@ -36,29 +36,57 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  const activeRole = ROLES[currentRoleId] || ROLES.ADMIN;
+  const roleIcons = {
+    FARMER: <Sprout className="w-5 h-5 text-emerald-400" />,
+    DRIVER: <Truck className="w-5 h-5 text-blue-400" />,
+    BUYER: <Building2 className="w-5 h-5 text-amber-400" />,
+    ADMIN: <BarChart3 className="w-5 h-5 text-indigo-400" />,
+  };
+
+  const { setRole } = useRole();
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 space-y-6">
       {/* Top Console Header */}
-      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <span className="text-[10px] font-bold text-muted-fg uppercase tracking-widest block">
-            KhetOS Production Console
-          </span>
-          <h2 className="text-xl font-black text-foreground mt-0.5">
-            {activeRole.icon} {activeRole.name} &bull; {activeRole.roleLabel}
-          </h2>
+      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center border border-border shrink-0">
+            {roleIcons[currentRoleId] || <User className="w-5 h-5 text-primary" />}
+          </div>
+          <div>
+            <span className="text-[10px] font-bold text-muted-fg uppercase tracking-widest block">
+              KhetOS Production Console
+            </span>
+            <h2 className="text-xl font-black text-foreground mt-0.5">
+              {activeRole.name} &bull; <span className="text-primary font-bold">{activeRole.roleLabel}</span>
+            </h2>
+          </div>
         </div>
 
-        {/* Link back to Portals on Home page */}
-        <Link
-          to="/"
-          className="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-secondary hover:bg-card text-foreground text-xs font-semibold transition active:scale-95"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Switch Portal</span>
-        </Link>
+        {/* 1-Click Role Switcher Pills */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+          {Object.values(ROLES).map((r) => (
+            <button
+              key={r.id}
+              onClick={() => setRole(r.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                currentRoleId === r.id
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-secondary text-muted-fg hover:text-foreground border border-border'
+              }`}
+            >
+              <span>{r.roleLabel.split(' ')[0]}</span>
+            </button>
+          ))}
+
+          <Link
+            to="/"
+            title="Overview portals"
+            className="p-1.5 rounded-xl border border-border bg-secondary hover:bg-card text-muted-fg hover:text-foreground transition ml-1"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Link>
+        </div>
       </div>
 
       {/* Dynamic Role Portal View */}

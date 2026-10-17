@@ -1,13 +1,23 @@
 import time
+from core.database import (
+    get_active_pool, get_all_lots, get_activity_feed, create_lot,
+    get_or_create_user, reset_database, update_lot_quantity, update_lot_status,
+    delete_lot, get_user_lots
+)
+from core.notifications import send_dual_channel_alert
 
 class StateManager:
+    """
+    Persistent transactional state manager backed by SQLite.
+    Guarantees multi-session memory and real-time knapsack recalculations.
+    """
     def __init__(self):
-        self.reset_state()
+        pass
 
-    def reset_state(self):
-        # Initial seed state: 1,100 kg already loaded in the Rohtak Bolero Pool!
-        # Just waiting for Ramu's 400 kg (4 quintals) to hit 100% capacity!
-        self.active_pool = {
+    @property
+    def active_pool(self):
+        pool = get_active_pool()
+        return pool or {
             "pool_id": "POOL-ROH-104",
             "cluster_name": "Rohtak-Kalanaur Mustard Corridor",
             "crop": "Mustard (सरसों)",
@@ -20,62 +30,20 @@ class StateManager:
             "target_mandi": "Azadpur APMC Mandi, Delhi",
             "benchmark_mandi_price": 5420,
             "local_trader_price": 4700,
-            "transporter": "Mahindra Bolero Pickup (HR-12-AE-8419)"
+            "transporter": "Mahindra Bolero Maxi Truck (HR-12-AE-8419)"
         }
 
-        self.lots = [
-            {
-                "lot_id": "LOT-8921",
-                "farmer_id": "FARMER-8921",
-                "farmer_name": "Suresh Kumar",
-                "phone": "+91 98123 45001",
-                "village": "Bhalaut",
-                "khet_pin": "HR-ROH-78G4",
-                "crop": "Mustard",
-                "quantity_quintals": 6.0,
-                "bags_count": 12,
-                "status": "LOADED_ON_TRUCK",
-                "inspection_passed": True,
-                "freight_share_rs": 960
-            },
-            {
-                "lot_id": "LOT-8922",
-                "farmer_id": "FARMER-8922",
-                "farmer_name": "Dinesh Chillar",
-                "phone": "+91 98123 45002",
-                "village": "Kalanaur",
-                "khet_pin": "HR-ROH-62K9",
-                "crop": "Mustard",
-                "quantity_quintals": 5.0,
-                "bags_count": 10,
-                "status": "LOADED_ON_TRUCK",
-                "inspection_passed": True,
-                "freight_share_rs": 800
-            }
-        ]
+    @property
+    def lots(self):
+        return get_all_lots()
 
-        self.activity_feed = [
-            {
-                "timestamp": "09:15 AM",
-                "event": "POOL_INITIALIZED",
-                "text": "Rohtak-Kalanaur Bolero Truck Pool initialized for Azadpur Mandi.",
-                "type": "system"
-            },
-            {
-                "timestamp": "09:30 AM",
-                "event": "LOT_LOADED",
-                "text": "Suresh Kumar loaded 12 bags (6 Qtl) at Village Bhalaut (HR-ROH-78G4).",
-                "type": "lot"
-            },
-            {
-                "timestamp": "09:45 AM",
-                "event": "LOT_LOADED",
-                "text": "Dinesh Chillar loaded 10 bags (5 Qtl) at Village Kalanaur (HR-ROH-62K9).",
-                "type": "lot"
-            }
-        ]
+    @property
+    def activity_feed(self):
+        return get_activity_feed(limit=12)
 
-        self.buyer_orders = [
+    @property
+    def buyer_orders(self):
+        return [
             {
                 "order_id": "ORD-DL-901",
                 "buyer_name": "Shree Ram Roller Flour & Oil Mill",
@@ -87,59 +55,50 @@ class StateManager:
             }
         ]
 
-    def add_lot_from_farmer(self, farmer_name, phone, village, crop, quantity_quintals, khet_pin="HR-ROH-91P2", channel="telegram"):
-        lot_id = f"LOT-{int(time.time()) % 10000}"
-        bags_count = int(quantity_quintals * 2)
-        weight_kg = quantity_quintals * 100
+    def reset_state(self):
+        reset_database()
+        return True
 
-        # Update pool
-        new_loaded_kg = min(self.active_pool["target_capacity_kg"], self.active_pool["current_loaded_kg"] + weight_kg)
-        self.active_pool["current_loaded_kg"] = new_loaded_kg
-        self.active_pool["current_loaded_quintals"] = round(new_loaded_kg / 100.0, 1)
-        self.active_pool["capacity_percentage"] = round((new_loaded_kg / self.active_pool["target_capacity_kg"]) * 100.0, 1)
+    def add_lot_from_farmer(self, farmer_name, phone, village, crop, quantity_quintals, khet_pin="HR-ROH-91P2", channel="ivr_call"):
+        # 1. Ensure user is in database
+        get_or_create_user(
+            phone=phone,
+            name=farmer_name,
+            village=village,
+            khet_pin=khet_pin,
+            voice_breadcrumb="बड़ के पेड़ से नहर की पटरी पकड़ के ट्यूबवेल के सामने आ जाना।"
+        )
 
-        if self.active_pool["capacity_percentage"] >= 100.0:
-            self.active_pool["status"] = "FULL_DISPATCH_LOCKED"
+        # 2. Create lot in database
+        lot = create_lot(
+            phone=phone,
+            crop=crop,
+            quantity_quintals=quantity_quintals,
+            channel=channel
+        )
 
-        # Calculate Ramu's extra profit
-        local_income = quantity_quintals * self.active_pool["local_trader_price"]
-        mandi_gross = quantity_quintals * self.active_pool["benchmark_mandi_price"]
-        shared_freight = quantity_quintals * 120
-        net_profit_extra = (mandi_gross - shared_freight) - local_income
+        # 3. Fire dual-channel alert (Phone Call + Telegram)
+        pool = self.active_pool
+        pool_full_msg = f"{farmer_name} ji, aapki {quantity_quintals} quintal {crop} Mahindra Bolero pool mein jud gayi hai! Gaadi {pool['capacity_percentage']}% full hai."
+        voice_hi = f"{farmer_name} चाचा, आपकी {quantity_quintals} क्विंटल {crop} गाड़ी में जुड़ गई है। महिंद्रा बोलेरो {pool['capacity_percentage']}% भर चुकी है।"
 
-        new_lot = {
-            "lot_id": lot_id,
-            "farmer_id": f"FARMER-{lot_id}",
-            "farmer_name": farmer_name,
-            "phone": phone,
-            "village": village,
-            "khet_pin": khet_pin,
-            "crop": crop,
-            "quantity_quintals": quantity_quintals,
-            "bags_count": bags_count,
-            "status": "PENDING_DRIVER_INSPECTION" if self.active_pool["status"] != "FULL_DISPATCH_LOCKED" else "READY_FOR_DISPATCH",
-            "inspection_passed": True,
-            "freight_share_rs": shared_freight,
-            "extra_profit_earned_rs": net_profit_extra,
-            "channel": channel
-        }
-        self.lots.append(new_lot)
+        try:
+            send_dual_channel_alert(
+                phone=phone,
+                title="Corridor Pool Booking Confirmed ⚡",
+                message=pool_full_msg,
+                hindi_voice_text=voice_hi
+            )
+        except Exception as e:
+            print(f"[Warning] Dual-channel alert dispatch warning: {e}")
 
-        event_text = f"{farmer_name} added {bags_count} bags ({quantity_quintals} Qtl) via {channel.upper()}! Extra profit: +₹{net_profit_extra:.0f}"
-        self.activity_feed.insert(0, {
-            "timestamp": time.strftime("%I:%M %p"),
-            "event": "LOT_ADDED",
-            "text": event_text,
-            "type": "farmer"
-        })
-
-        return new_lot
+        return lot
 
     def get_full_state(self):
         return {
             "active_pool": self.active_pool,
             "lots": self.lots,
-            "activity_feed": self.activity_feed[:8],
+            "activity_feed": self.activity_feed,
             "buyer_orders": self.buyer_orders
         }
 

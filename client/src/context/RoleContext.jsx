@@ -13,7 +13,7 @@ export const ROLES = {
     crop: 'Mustard (सरसों)',
     declaredQuantity: 4.0, // 4 Quintals = 8 bags
     badgeColor: 'emerald',
-    icon: '🌾',
+    iconName: 'Sprout',
   },
   DRIVER: {
     id: 'DRIVER',
@@ -24,7 +24,7 @@ export const ROLES = {
     phone: '+91 94160 88219',
     route: 'Rohtak ➔ Bhalaut ➔ Kalanaur ➔ Azadpur APMC',
     badgeColor: 'blue',
-    icon: '🚚',
+    iconName: 'Truck',
   },
   BUYER: {
     id: 'BUYER',
@@ -34,7 +34,7 @@ export const ROLES = {
     gstin: '07AAAAA0000A1Z5',
     phone: '+91 98111 22334',
     badgeColor: 'amber',
-    icon: '🏢',
+    iconName: 'Building2',
   },
   ADMIN: {
     id: 'ADMIN',
@@ -44,13 +44,16 @@ export const ROLES = {
     region: 'North India Agri-Logistics Grid',
     phone: '+91 11 2769 1100',
     badgeColor: 'zinc',
-    icon: '📊',
+    iconName: 'BarChart3',
   },
 };
 
 export function RoleProvider({ children }) {
   const [currentRoleId, setCurrentRoleId] = useState(() => {
     return localStorage.getItem('khetos_role') || 'ADMIN';
+  });
+  const [customPhone, setCustomPhone] = useState(() => {
+    return localStorage.getItem('khetos_phone') || '+91 98123 45099';
   });
 
   const activeRole = ROLES[currentRoleId] || ROLES.ADMIN;
@@ -62,8 +65,13 @@ export function RoleProvider({ children }) {
     }
   };
 
+  const updatePhone = (phone) => {
+    setCustomPhone(phone);
+    localStorage.setItem('khetos_phone', phone);
+  };
+
   return (
-    <RoleContext.Provider value={{ currentRoleId, activeRole, setRole, ROLES }}>
+    <RoleContext.Provider value={{ currentRoleId, activeRole, setRole, ROLES, customPhone, setCustomPhone: updatePhone }}>
       {children}
     </RoleContext.Provider>
   );

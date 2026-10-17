@@ -154,50 +154,79 @@ export default function AdminView({ state, onRefresh }) {
                 Discrete Knapsack
               </span>
             </div>
-            <div className="flex items-center gap-3 text-[11px] text-muted-fg">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500 inline-block" /> Suresh (12)</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-blue-500 inline-block" /> Dinesh (10)</span>
-              <span className="flex items-center gap-1.5">
-                <span className={`w-2.5 h-2.5 rounded inline-block ${pool.capacity_percentage >= 99 ? 'bg-amber-500' : 'border border-dashed border-primary animate-pulse'}`} />
-                Ramu (8)
-              </span>
+
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-fg">
+              {lots.map((lot, idx) => {
+                const colors = [
+                  { dot: "bg-emerald-500" },
+                  { dot: "bg-blue-500" },
+                  { dot: "bg-amber-500" },
+                  { dot: "bg-purple-500" },
+                  { dot: "bg-cyan-500" }
+                ];
+                const col = colors[idx % colors.length];
+                return (
+                  <span key={lot.lot_id} className="flex items-center gap-1.5">
+                    <span className={`w-2.5 h-2.5 rounded ${col.dot} inline-block`} />
+                    {lot.farmer_name?.split(' ')[0] || 'Farmer'} ({lot.bags_count || (lot.quantity_quintals * 2)})
+                  </span>
+                );
+              })}
             </div>
           </div>
 
           <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-15 gap-1.5 pt-1">
-            {Array.from({ length: 30 }).map((_, i) => {
-              const isSuresh = i < 12;
-              const isDinesh = i >= 12 && i < 22;
-              const isRamu = i >= 22;
-              const isRamuLoaded = isRamu && pool.capacity_percentage >= 99;
+            {(() => {
+              const farmerPalette = [
+                { bg: "bg-emerald-500/20 border-emerald-500/50 text-emerald-400 font-bold", dot: "bg-emerald-500" },
+                { bg: "bg-blue-500/20 border-blue-500/50 text-blue-400 font-bold", dot: "bg-blue-500" },
+                { bg: "bg-amber-500/25 border-amber-500/60 text-amber-400 font-bold", dot: "bg-amber-500" },
+                { bg: "bg-purple-500/20 border-purple-500/50 text-purple-400 font-bold", dot: "bg-purple-500" },
+                { bg: "bg-cyan-500/20 border-cyan-500/50 text-cyan-400 font-bold", dot: "bg-cyan-500" },
+              ];
 
-              let bgClass = "bg-secondary border border-dashed border-border text-muted-fg/40";
-              let title = "Empty Bay Slot (50kg)";
+              const flatbedBags = [];
+              lots.forEach((lot, lotIdx) => {
+                const palette = farmerPalette[lotIdx % farmerPalette.length];
+                const bagCount = Math.round(lot.bags_count || (lot.quantity_quintals * 2));
+                for (let b = 0; b < bagCount && flatbedBags.length < 30; b++) {
+                  flatbedBags.push({
+                    lotId: lot.lot_id,
+                    farmerName: lot.farmer_name,
+                    bagNumInLot: b + 1,
+                    totalLotBags: bagCount,
+                    palette: palette,
+                    isLoaded: lot.status === 'LOADED_ON_TRUCK' || lot.status === 'ACCEPTED' || (pool.capacity_percentage >= 99)
+                  });
+                }
+              });
 
-              if (isSuresh) {
-                bgClass = "bg-emerald-500/20 border border-emerald-500/50 text-emerald-700 dark:text-emerald-400 font-bold";
-                title = `Suresh Kumar • Bag #${i + 1} (50kg)`;
-              } else if (isDinesh) {
-                bgClass = "bg-blue-500/20 border border-blue-500/50 text-blue-700 dark:text-blue-400 font-bold";
-                title = `Dinesh Chillar • Bag #${i + 1} (50kg)`;
-              } else if (isRamuLoaded) {
-                bgClass = "bg-amber-500/25 border border-amber-500/60 text-amber-800 dark:text-amber-400 font-bold animate-pulse";
-                title = `Ramu Sharma • Bag #${i + 1} (50kg)`;
-              } else {
-                bgClass = "border border-dashed border-primary/50 bg-primary/10 text-primary font-bold animate-pulse";
-                title = `Reserved for Ramu (4 Qtl) • Key 2 pending`;
-              }
+              return Array.from({ length: 30 }).map((_, i) => {
+                const bag = flatbedBags[i];
+                let bgClass = "bg-secondary border border-dashed border-border text-muted-fg/40";
+                let title = `Empty Bay Slot #${i + 1} (50kg)`;
 
-              return (
-                <div
-                  key={i}
-                  title={title}
-                  className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-mono transition-all duration-500 select-none shadow-xs ${bgClass}`}
-                >
-                  {i + 1}
-                </div>
-              );
-            })}
+                if (bag) {
+                  if (bag.isLoaded) {
+                    bgClass = `${bag.palette.bg} border shadow-xs`;
+                    title = `${bag.farmerName} • Bag #${bag.bagNumInLot}/${bag.totalLotBags} (50kg)`;
+                  } else {
+                    bgClass = "border border-dashed border-primary/50 bg-primary/10 text-primary font-bold animate-pulse";
+                    title = `Reserved for ${bag.farmerName} • Key 2 pending`;
+                  }
+                }
+
+                return (
+                  <div
+                    key={i}
+                    title={title}
+                    className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-mono transition-all duration-500 select-none ${bgClass}`}
+                  >
+                    {i + 1}
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
 
