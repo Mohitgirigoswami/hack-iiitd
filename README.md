@@ -20,13 +20,13 @@ In Indian agriculture, **86% of farmers are smallholders** operating on less tha
 ├────────────────────────────────┬───────────────────────────────┬───────────────────────┤
 │ PHYSICAL REALITY               │ COMMERCIAL BOTTLENECK         │ PREDATORY RESULT      │
 ├────────────────────────────────┼───────────────────────────────┼───────────────────────┤
-│ Harvest: 4 Quintals (Mustard) │ Solo Tempo Hire: ₹2,100       │ Prohibitive Freight   │
+│ Harvest: 4 Quintals (Mustard)  │ Solo Tempo Hire: ₹2,100       │ Prohibitive Freight   │
 │ Location: 1.2km unmapped dirt  │ Google Maps stops at Highway  │ Commercial trucks     │
 │ road off PMGSY highway         │ (deadzone for tempos)         │ refuse micro-pickups  │
 │ Device: ₹1,200 Feature Phone   │ Zero 4G/App Literacy          │ Excluded from apps    │
 ├────────────────────────────────┴───────────────────────────────┴───────────────────────┤
-│ ➔ Village Middleman (Arhatiya) pays ₹4,700/Qtl (Azadpur APMC rate: ₹5,420/Qtl)         │
-│ ➔ Smallholder loses ₹2,880 in pure profit on a single 4-quintal harvest               │
+│ ➔ Village Middleman (Arhatiya) pays ₹4,700/Qtl (Azadpur APMC rate: ₹5,420/Qtl)        │
+│ ➔ Smallholder loses ₹2,880 in pure profit on a single 4-quintal harvest                                                          │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
