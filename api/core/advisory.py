@@ -1,6 +1,8 @@
 import json
 import os
 import io
+import asyncio
+import edge_tts
 from gtts import gTTS
 
 ICAR_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "icar_registry.json")
@@ -44,15 +46,38 @@ def get_prescription(crop, disease):
 
 _tts_cache = {}
 
+async def _synthesize_neural_edge(text, voice="hi-IN-MadhurNeural"):
+    communicate = edge_tts.Communicate(text, voice)
+    data = bytearray()
+    async for chunk in communicate.stream():
+        if chunk.get("type") == "audio":
+            data.extend(chunk.get("data", b""))
+    return bytes(data)
+
 def generate_hindi_audio(text):
     """
-    Synthesizes Hindi voice note using gTTS with caching.
-    Returns bytes buffer.
+    Synthesizes natural Hindi voice note using high-fidelity Microsoft Azure Neural Voice
+    (ElevenLabs equivalent: hi-IN-MadhurNeural) with caching and gTTS fallback.
+    Returns audio bytes.
     """
     if not text:
         return None
     if text in _tts_cache:
         return _tts_cache[text]
+
+    # Primary: Azure Neural Voice (ElevenLabs quality, human cadence & breath)
+    try:
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        data = loop.run_until_complete(_synthesize_neural_edge(text))
+        loop.close()
+        if data and len(data) > 0:
+            _tts_cache[text] = data
+            return data
+    except Exception as e:
+        print(f"[Warning] Neural edge-tts failed ({e}), falling back to gTTS")
+
+    # Fallback: Google Translate TTS
     try:
         tts = gTTS(text=text, lang="hi", slow=False)
         fp = io.BytesIO()
@@ -62,6 +87,7 @@ def generate_hindi_audio(text):
         _tts_cache[text] = data
         return data
     except Exception as e:
-        print(f"[Error] Audio synthesis failed: {e}")
+        print(f"[Error] Audio synthesis fallback failed: {e}")
         return None
+
 
