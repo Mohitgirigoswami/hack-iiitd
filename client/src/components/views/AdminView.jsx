@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Truck, MapPin, CheckCircle2, AlertCircle, RefreshCw, Phone, ShieldCheck, ChevronRight } from 'lucide-react';
+import { Truck, MapPin, CheckCircle2, AlertCircle, RefreshCw, Phone, ShieldCheck, ChevronRight, BarChart3, Activity } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '../../context/RoleContext';
 
@@ -45,17 +45,19 @@ export default function AdminView({ state, onRefresh }) {
   return (
     <div className="space-y-6">
       {/* Admin Profile & Multi-Corridor Fleet Selector */}
-      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+      <div className="bg-card/80 backdrop-blur-sm border border-border/80 rounded-2xl p-5 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-border">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xl">📊</span>
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shrink-0">
+                <BarChart3 className="w-4 h-4" />
+              </div>
               <h3 className="text-lg font-bold text-foreground">{activeRole.name}</h3>
               <span className="text-xs px-2 py-0.5 rounded bg-secondary text-foreground font-semibold border border-border">
                 APMC Command Center
               </span>
             </div>
-            <p className="text-xs text-muted-fg">{activeRole.mandi} &bull; {activeRole.region}</p>
+            <p className="text-xs text-muted-fg mt-0.5">{activeRole.mandi} &bull; {activeRole.region}</p>
           </div>
 
           <div className="flex items-center gap-2">

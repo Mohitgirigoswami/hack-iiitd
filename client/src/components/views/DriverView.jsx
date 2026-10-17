@@ -48,16 +48,18 @@ export default function DriverView({ state, onRefresh }) {
   return (
     <div className="space-y-6">
       {/* Transporter Profile & Route Banner */}
-      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-card/80 backdrop-blur-sm border border-border/80 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🚚</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+              <Truck className="w-4 h-4" />
+            </div>
             <h3 className="text-lg font-bold text-foreground">{activeRole.name}</h3>
             <span className="text-xs px-2 py-0.5 rounded bg-blue-500/15 text-blue-700 dark:text-blue-400 font-semibold border border-blue-500/30">
               Corridor Transporter
             </span>
           </div>
-          <p className="text-xs text-muted-fg">Vehicle: {activeRole.vehicle} &bull; Reg: {activeRole.regNumber}</p>
+          <p className="text-xs text-muted-fg mt-0.5">Vehicle: {activeRole.vehicle} &bull; Reg: {activeRole.regNumber}</p>
         </div>
 
         <div className="flex items-center gap-3 bg-secondary/80 px-4 py-2.5 rounded-xl border border-border">

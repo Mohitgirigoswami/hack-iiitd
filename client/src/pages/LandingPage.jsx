@@ -1,6 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, ArrowRight, ShieldCheck, MapPin, Truck, Building2, BarChart3, Sparkles } from 'lucide-react';
+import { 
+  Phone, ArrowRight, ShieldCheck, MapPin, Truck, Building2, 
+  BarChart3, Sparkles, Sprout, Activity, Radio, Scale, Banknote, 
+  CheckCircle2, Compass, Layers, Zap
+} from 'lucide-react';
 import { useRole } from '../context/RoleContext';
 
 export default function LandingPage() {
@@ -13,37 +17,55 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 py-8 px-4 sm:px-6">
+    <div className="max-w-6xl mx-auto space-y-12 py-8 px-4 sm:px-6 relative">
+      {/* Ambient Top Glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-72 bg-gradient-to-b from-primary/10 via-primary/5 to-transparent blur-3xl pointer-events-none -z-10" />
+
       {/* Hero Section */}
-      <div className="text-center space-y-4 max-w-3xl mx-auto">
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/20 border border-primary/40 text-primary text-xs font-bold uppercase tracking-wider">
-          <Sparkles className="w-3.5 h-3.5" />
-          The Farm-Gate Operating System
+      <div className="text-center space-y-5 max-w-3xl mx-auto pt-2">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold tracking-wide shadow-xs">
+          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+          <span>The Farm-Gate Operating System &bull; खेतOS</span>
         </div>
-        <h1 className="text-4xl sm:text-5xl font-black text-foreground tracking-tight leading-tight">
+        <h1 className="text-4xl sm:text-6xl font-black text-foreground tracking-tight leading-[1.1]">
           From Kaccha Rasta to <span className="text-primary underline decoration-primary/40 underline-offset-8">Pucca Mandi</span>.
         </h1>
-        <p className="text-base sm:text-lg text-muted-fg leading-relaxed">
-          Zero-app rural logistics & generic chemical intelligence. Empowering smallholder farmers to pool 1.5T pickup trucks, verify grain at farm-gate, and settle advance escrow with wholesale millers.
+        <p className="text-base sm:text-lg text-muted-fg leading-relaxed max-w-2xl mx-auto font-normal">
+          Zero-app rural logistics & generic chemical intelligence. Empowering smallholder farmers to pool 1.5T pickup trucks, verify grain at the farm-gate, and lock advance escrow with wholesale millers.
         </p>
 
-        {/* Live Corridor Status Bar */}
-        <div className="pt-2 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
-          <div className="p-3 bg-card border border-border rounded-xl">
-            <span className="text-[11px] text-muted-fg block">Active Corridor:</span>
-            <span className="font-bold text-foreground text-xs sm:text-sm">Rohtak ➔ Azadpur APMC</span>
+        {/* Live Corridor Status Bar - Bento KPI Strip */}
+        <div className="pt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
+          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs transition-all duration-200 hover:border-primary/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] text-muted-fg uppercase tracking-wider font-semibold">Active Corridor</span>
+            </div>
+            <span className="font-bold text-foreground text-xs sm:text-sm block truncate">Rohtak ➔ Azadpur APMC</span>
           </div>
-          <div className="p-3 bg-card border border-border rounded-xl">
-            <span className="text-[11px] text-muted-fg block">Corridor Vehicle:</span>
-            <span className="font-bold text-foreground text-xs sm:text-sm">Mahindra Bolero (1.5T)</span>
+
+          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs transition-all duration-200 hover:border-primary/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Truck className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] text-muted-fg uppercase tracking-wider font-semibold">Fleet Vehicle</span>
+            </div>
+            <span className="font-bold text-foreground text-xs sm:text-sm block truncate">Mahindra Bolero (1.5T)</span>
           </div>
-          <div className="p-3 bg-card border border-border rounded-xl">
-            <span className="text-[11px] text-muted-fg block">Benchmark APMC Rate:</span>
-            <span className="font-bold text-primary text-xs sm:text-sm">₹5,420 / Quintal</span>
+
+          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs transition-all duration-200 hover:border-primary/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-amber-500 font-bold text-xs">₹</span>
+              <span className="text-[10px] text-muted-fg uppercase tracking-wider font-semibold">Benchmark Modal</span>
+            </div>
+            <span className="font-mono font-bold text-primary text-xs sm:text-sm block">₹5,420 / Qtl</span>
           </div>
-          <div className="p-3 bg-card border border-border rounded-xl">
-            <span className="text-[11px] text-muted-fg block">Smallholder Freight Cut:</span>
-            <span className="font-bold text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm">-62% Savings</span>
+
+          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs transition-all duration-200 hover:border-primary/30">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Zap className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="text-[10px] text-muted-fg uppercase tracking-wider font-semibold">Smallholder Gain</span>
+            </div>
+            <span className="font-bold text-emerald-700 dark:text-emerald-400 text-xs sm:text-sm block">+₹2,240 Margin</span>
           </div>
         </div>
       </div>
@@ -62,11 +84,13 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Card 1: Farmer Portal */}
-          <div className="bg-card hover:border-primary/50 border border-border rounded-2xl p-6 transition-all hover:shadow-glow space-y-4 flex flex-col justify-between">
+          <div className="bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 space-y-4 flex flex-col justify-between group">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-3xl">🌾</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                  <Sprout className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30">
                   Farmer Portal
                 </span>
               </div>
@@ -77,22 +101,29 @@ export default function LandingPage() {
               <p className="text-xs text-muted-fg leading-relaxed">
                 Check live APMC mandi prices, run photo & voice chemical disease diagnostics with ICAR generic salts, and monitor your 4-quintal pooled cargo.
               </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">Live Agmarknet</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">ICAR Rx</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">1800-IVR Connected</span>
+              </div>
             </div>
             <button
               onClick={() => handleEnterPortal('FARMER')}
-              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition flex items-center justify-center gap-2 group"
+              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
             >
               Enter as Farmer
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
             </button>
           </div>
 
           {/* Card 2: Transporter / Driver Console */}
-          <div className="bg-card hover:border-primary/50 border border-border rounded-2xl p-6 transition-all hover:shadow-glow space-y-4 flex flex-col justify-between">
+          <div className="bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 space-y-4 flex flex-col justify-between group">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-3xl">🚚</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30">
+                <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                  <Truck className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30">
                   Transporter Dispatch
                 </span>
               </div>
@@ -103,22 +134,29 @@ export default function LandingPage() {
               <p className="text-xs text-muted-fg leading-relaxed">
                 View rural pickup waypoints along PMGSY dirt roads. Execute 3-point digital quality inspection (stitching, purity, moisture) with ₹0 penalty lot deferral.
               </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">PMGSY Rural Routes</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">3-Point Gatekeeper</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">₹0 Deferral</span>
+              </div>
             </div>
             <button
               onClick={() => handleEnterPortal('DRIVER')}
-              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition flex items-center justify-center gap-2 group"
+              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
             >
               Enter as Transporter
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
             </button>
           </div>
 
           {/* Card 3: Wholesale Buyer Gateway */}
-          <div className="bg-card hover:border-primary/50 border border-border rounded-2xl p-6 transition-all hover:shadow-glow space-y-4 flex flex-col justify-between">
+          <div className="bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 space-y-4 flex flex-col justify-between group">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-3xl">🏢</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-500/30">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-500/30">
                   Wholesale Buyer
                 </span>
               </div>
@@ -129,22 +167,29 @@ export default function LandingPage() {
               <p className="text-xs text-muted-fg leading-relaxed">
                 Direct farm-gate sourcing for institutional grain processors. Run hybrid knapsack matching and deposit 20% advance escrow via Razorpay checkout.
               </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">Knapsack Allocation</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">20% Escrow Advance</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">Zero Middleman</span>
+              </div>
             </div>
             <button
               onClick={() => handleEnterPortal('BUYER')}
-              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition flex items-center justify-center gap-2 group"
+              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
             >
               Enter as Wholesale Buyer
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
             </button>
           </div>
 
           {/* Card 4: APMC Mandi Command Center */}
-          <div className="bg-card hover:border-primary/50 border border-border rounded-2xl p-6 transition-all hover:shadow-glow space-y-4 flex flex-col justify-between">
+          <div className="bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5 space-y-4 flex flex-col justify-between group">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-3xl">📊</span>
-                <span className="text-xs font-bold px-2 py-0.5 rounded bg-secondary text-foreground border border-border">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                  <Activity className="w-5 h-5" />
+                </div>
+                <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/30">
                   Command Center
                 </span>
               </div>
@@ -155,13 +200,18 @@ export default function LandingPage() {
               <p className="text-xs text-muted-fg leading-relaxed">
                 High-altitude command center for mandi authorities. Live Bolero cargo fill gauge (73.3% ➔ 100%), verified farmer lot manifests, and settlement telemetry.
               </p>
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">30-Bag Flatbed Grid</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">Live Manifest</span>
+                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-secondary text-muted-fg border border-border/60">80% Dock Settlement</span>
+              </div>
             </div>
             <button
               onClick={() => handleEnterPortal('ADMIN')}
-              className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition flex items-center justify-center gap-2 group"
+              className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all duration-200 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
             >
               Enter Command Center
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
             </button>
           </div>
         </div>
@@ -192,30 +242,38 @@ export default function LandingPage() {
       </div>
 
       {/* Farm-Gate Platform Security & Economic Principles */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border">
-        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-1">
-          <span className="text-xl">📞</span>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border/70">
+        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-2 hover:border-primary/30 transition-all">
+          <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <Radio className="w-4 h-4" />
+          </div>
           <h4 className="text-xs font-bold text-foreground">Zero-App Ingestion</h4>
           <p className="text-[11px] text-muted-fg leading-relaxed">
             1800-KHET-OS toll-free IVR operable on any ₹1,200 feature phone with zero 4G required.
           </p>
         </div>
-        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-1">
-          <span className="text-xl">⚖️</span>
+        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-2 hover:border-primary/30 transition-all">
+          <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <Scale className="w-4 h-4" />
+          </div>
           <h4 className="text-xs font-bold text-foreground">Discrete Knapsack</h4>
           <p className="text-[11px] text-muted-fg leading-relaxed">
             Strict 50kg standard bag multiples prevent lot fragmentation and simplify physical accounting.
           </p>
         </div>
-        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-1">
-          <span className="text-xl">🛡️</span>
+        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-2 hover:border-primary/30 transition-all">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center">
+            <ShieldCheck className="w-4 h-4" />
+          </div>
           <h4 className="text-xs font-bold text-foreground">Escrow Custody</h4>
           <p className="text-[11px] text-muted-fg leading-relaxed">
             20% buyer advance locked before ignition; 80% settled electronically against weighbridge slips.
           </p>
         </div>
-        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-1">
-          <span className="text-xl">🌾</span>
+        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-2 hover:border-primary/30 transition-all">
+          <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center">
+            <Banknote className="w-4 h-4" />
+          </div>
           <h4 className="text-xs font-bold text-foreground">₹0 Farmer Fees</h4>
           <p className="text-[11px] text-muted-fg leading-relaxed">
             Zero commission on smallholders. Value captured purely via 1.5% institutional buyer take-rate.

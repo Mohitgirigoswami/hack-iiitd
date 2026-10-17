@@ -95,16 +95,18 @@ export default function BuyerView({ state, onRefresh }) {
   return (
     <div className="space-y-6">
       {/* Buyer Profile Banner */}
-      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-card/80 backdrop-blur-sm border border-border/80 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🏢</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+              <Building2 className="w-4 h-4" />
+            </div>
             <h3 className="text-lg font-bold text-foreground">{activeRole.name}</h3>
             <span className="text-xs px-2 py-0.5 rounded bg-amber-500/15 text-amber-800 dark:text-amber-400 font-semibold border border-amber-500/30">
               Institutional Processor
             </span>
           </div>
-          <p className="text-xs text-muted-fg">GSTIN: {activeRole.gstin} &bull; Hub: {activeRole.location}</p>
+          <p className="text-xs text-muted-fg mt-0.5">GSTIN: {activeRole.gstin} &bull; Hub: {activeRole.location}</p>
         </div>
 
         <div className="flex items-center gap-3 bg-secondary/80 px-4 py-2.5 rounded-xl border border-border">

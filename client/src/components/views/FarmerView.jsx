@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Phone, Truck, ShieldAlert, Sparkles, Volume2, Upload, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { MapPin, Phone, Truck, ShieldAlert, Sparkles, Volume2, Upload, AlertCircle, CheckCircle2, Sprout } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 
 export default function FarmerView({ state, onRefresh }) {
@@ -68,10 +68,12 @@ export default function FarmerView({ state, onRefresh }) {
   return (
     <div className="space-y-6">
       {/* Farmer Profile Card & KhetPin Banner */}
-      <div className="bg-card border border-border rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-card/80 backdrop-blur-sm border border-border/80 rounded-2xl p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">🌾</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+              <Sprout className="w-4 h-4" />
+            </div>
             <h3 className="text-lg font-bold text-foreground">{activeRole.name}</h3>
             <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 font-semibold border border-emerald-500/30">
               Verified Smallholder
