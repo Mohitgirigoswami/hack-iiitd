@@ -150,15 +150,15 @@ export default function OmnichannelNotificationDrawer({ isOpen, onClose, activeP
         <div className="p-3.5 bg-secondary/80 border-b border-border space-y-3 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
-              <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+              <MessageSquare className="w-3.5 h-3.5 text-primary" />
               Telegram Phone Verification
             </span>
-            <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
+            <span className="text-[10px] text-emerald-500 font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3 h-3" /> Auto-Synced to Caller ID
             </span>
           </div>
 
-          <div className="p-2.5 rounded-xl bg-card border border-border flex items-center justify-between gap-2">
+          <div className="p-2.5 rounded-xl bg-card border border-border flex items-center justify-between gap-2 shadow-xs">
             <div>
               <span className="text-[9px] font-bold text-muted-fg uppercase tracking-wider block">Verified Caller CLI</span>
               <span className="text-xs font-bold font-mono text-foreground">{activePhone}</span>
@@ -167,7 +167,7 @@ export default function OmnichannelNotificationDrawer({ isOpen, onClose, activeP
               href={`https://t.me/KhetOSSaathiBot?start=link_${encodeURIComponent(activePhone.replace(/\s+/g, ''))}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition inline-flex items-center gap-1 shrink-0 shadow-sm"
+              className="px-3 py-1.5 rounded-lg bg-primary hover:bg-primary/90 text-primary-fg font-bold text-[11px] transition inline-flex items-center gap-1 shrink-0 shadow-xs"
             >
               <Bot className="w-3.5 h-3.5" />
               Open @KhetOSSaathiBot ↗

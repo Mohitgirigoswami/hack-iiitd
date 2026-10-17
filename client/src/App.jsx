@@ -3,13 +3,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { RoleProvider } from './context/RoleContext';
 import Navbar from './components/Navbar';
-import TopLaserBar from './components/TopLaserBar';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import CallSimulator from './pages/CallSimulator';
 
 import AuthPage from './pages/AuthPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import ScrollProgress from './components/ScrollProgress';
 
 export default function App() {
   return (
@@ -17,8 +17,8 @@ export default function App() {
       <RoleProvider>
         <BrowserRouter>
           <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-200 relative">
-            {/* Viewport Top 3px Glowing Progress Laser Bar */}
-            <TopLaserBar />
+            {/* Viewport Top Scroll Progress Bar (Theme-Aware Emerald) */}
+            <ScrollProgress />
 
             {/* Global Sticky Navigation */}
             <Navbar />

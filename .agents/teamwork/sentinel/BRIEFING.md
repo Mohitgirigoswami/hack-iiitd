@@ -21,12 +21,10 @@ Supervise execution of Credentia visual theme overhaul, 3D cockpit preview, farm
 - **Delivered results**: none
 
 ## Project Status
-- **Phase**: Phase 2 (Implementation Tracks M1-M5 dispatched)
+- **Phase**: Phase 3 (Gate Review & Forensic Audit)
 - **Active Subagents**:
   - Orchestrator: 991d5f41-5ed5-421f-9dd8-9b27a294f676 (teamwork_preview_orchestrator_1)
-  - worker_frontend_1: e4797161-112a-4e03-975c-77f779fab640 (M1-M4, R1-R4)
-  - worker_backend_1: 01cc14b5-a085-4327-90f9-77a20a1773bf (M5, R5)
-  - test_writer_1: 8d6b3916-f3bd-435c-9a6a-9e797f287d97 (Test Infrastructure)
+  - Gate Reviewers/Challengers/Auditor dispatched by Orchestrator
 - **Active Crons**:
   - Cron 1 (Progress Reporting, */8 * * * *): task-18
   - Cron 2 (Liveness Check, */10 * * * *): task-20

@@ -1,4 +1,4 @@
-# BRIEFING — 2026-10-17T22:53:00Z
+# BRIEFING — 2026-10-18T04:34:30Z
 
 ## Mission
 Architect, author, and execute the comprehensive 4-Tier E2E test suite and deliver TEST_INFRA.md and TEST_READY.md.
@@ -18,7 +18,7 @@ Architect, author, and execute the comprehensive 4-Tier E2E test suite and deliv
 
 ## Current Parent
 - Conversation ID: 991d5f41-5ed5-421f-9dd8-9b27a294f676
-- Updated: 2026-10-17T22:53:00Z
+- Updated: 2026-10-18T04:34:30Z
 
 ## Task Summary
 - **What to build**: TEST_INFRA.md, tests/test_e2e_suite.py, execute tests, produce TEST_READY.md, handoff.md.
@@ -30,15 +30,17 @@ Architect, author, and execute the comprehensive 4-Tier E2E test suite and deliv
 - None explicitly loaded.
 
 ## Quality Status
-- **Build/test result**: Pending initial run
+- **Build/test result**: 37/37 tests PASSED (100.0% pass rate in 8.40s)
 - **Lint status**: Clean
-- **Tests added/modified**: tests/test_e2e_suite.py (planned)
+- **Tests added/modified**: `tests/test_e2e_suite.py` (37 tests across 4 tiers)
 
 ## Key Decisions Made
-- Use Python standard library (urllib.request, json, sqlite3, subprocess) to guarantee zero-dependency execution in any Python 3 environment.
+- Used Python standard library (`urllib.request`, `json`, `sqlite3`, `pathlib`) for zero-dependency execution.
+- Configured default API endpoint to `http://127.0.0.1:5000` to eliminate Windows IPv6 localhost DNS fallback latency (dropped run duration from 122s to 8.4s).
+- Implemented state reset before Tier 3, Tier 4, and at suite start to guarantee strict fixture independence.
 
 ## Artifact Index
-- TEST_INFRA.md — Test infrastructure, philosophy, and feature mapping
-- tests/test_e2e_suite.py — Standalone executable 4-Tier E2E test suite
-- TEST_READY.md — Test execution status, tier breakdown, and verification checklist
-- handoff.md — 5-component handoff report
+- `TEST_INFRA.md` — Test infrastructure, philosophy, and complete 17-feature mapping
+- `tests/test_e2e_suite.py` — Standalone executable 4-Tier E2E test suite
+- `TEST_READY.md` — Test readiness certification, runner command, tier breakdown, and feature coverage checklist
+- `handoff.md` — 5-component handoff report

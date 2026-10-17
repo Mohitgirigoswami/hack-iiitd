@@ -16,7 +16,6 @@ export default function AuthPage({ initialTab = 'signin' }) {
   // Sign In State
   const [loginPhone, setLoginPhone] = useState('+91 94160 88219');
   const [loginPin, setLoginPin] = useState('1234');
-  const [loginRole, setLoginRole] = useState('DRIVER');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -62,8 +61,7 @@ export default function AuthPage({ initialTab = 'signin' }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: loginPhone,
-          pin: loginPin,
-          role: loginRole
+          pin: loginPin
         })
       });
 
@@ -72,13 +70,13 @@ export default function AuthPage({ initialTab = 'signin' }) {
         throw new Error(data.message || 'Authentication failed. Please check credentials.');
       }
 
-      // Set role in context
+      // Automatically detect role from verified database record & redirect to console
       const user = data.user;
-      const targetRole = user.role || loginRole;
+      const targetRole = user.role || 'DRIVER';
       setRole(targetRole);
       setCustomPhone(user.phone);
 
-      // Redirect to dashboard
+      // Instant Auto-Redirection
       navigate('/dashboard');
     } catch (err) {
       setLoginError(err.message || 'Login failed');
@@ -87,11 +85,10 @@ export default function AuthPage({ initialTab = 'signin' }) {
     }
   };
 
-  // Quick 1-Click Fast Gate Credentials
-  const handleQuickCredential = (phone, pin, role) => {
+  // Quick 1-Click Fast Gate Credentials (Auto-resolves role from database)
+  const handleQuickCredential = (phone, pin) => {
     setLoginPhone(phone);
     setLoginPin(pin);
-    setLoginRole(role);
     setLoginError('');
   };
 
@@ -177,11 +174,11 @@ export default function AuthPage({ initialTab = 'signin' }) {
       </div>
 
       {/* Main Container */}
-      <div className="bg-[#0c1020]/90 backdrop-blur-xl border border-white/[0.08] rounded-3xl shadow-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] overflow-hidden">
+      <div className="bg-card border border-border rounded-3xl shadow-xl overflow-hidden">
         {/* Header Banner */}
-        <div className="p-6 sm:p-8 bg-gradient-to-r from-[#0c1020] via-[#12182d]/60 to-[#0c1020] border-b border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-6 sm:p-8 bg-gradient-to-r from-card via-secondary/40 to-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-[#12182d] border border-white/[0.08] flex items-center justify-center p-1.5 shadow-sm shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center p-1.5 shadow-sm shrink-0">
               <KhetOSLogo size={36} />
             </div>
             <div>
@@ -209,12 +206,12 @@ export default function AuthPage({ initialTab = 'signin' }) {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-white/[0.08] bg-[#080b18]/60 overflow-x-auto">
+        <div className="flex border-b border-border bg-secondary/30 overflow-x-auto">
           <button
             onClick={() => setActiveTab('signin')}
             className={`py-3.5 px-5 text-xs font-bold transition flex items-center gap-2 whitespace-nowrap border-b-2 ${
               activeTab === 'signin'
-                ? 'border-primary text-primary bg-[#0c1020]'
+                ? 'border-primary text-primary bg-card'
                 : 'border-transparent text-muted-fg hover:text-foreground'
             }`}
           >
@@ -306,40 +303,12 @@ export default function AuthPage({ initialTab = 'signin' }) {
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-foreground mb-1.5">Stakeholder Role</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'DRIVER', label: 'Transporter', icon: Truck },
-                    { id: 'BUYER', label: 'Buyer', icon: Building2 },
-                    { id: 'ADMIN', label: 'APMC Admin', icon: ShieldCheck }
-                  ].map((r) => {
-                    const Icon = r.icon;
-                    return (
-                      <button
-                        type="button"
-                        key={r.id}
-                        onClick={() => setLoginRole(r.id)}
-                        className={`p-2.5 rounded-xl border text-xs font-bold transition flex flex-col items-center gap-1 ${
-                          loginRole === r.id
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-secondary text-muted-fg border-border hover:text-foreground'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{r.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
               <button
                 type="submit"
                 disabled={loginLoading}
                 className="w-full py-3 bg-primary hover:brightness-110 text-primary-foreground font-bold text-xs rounded-xl shadow-md transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
-                {loginLoading ? 'Authenticating...' : 'Sign In to Console'}
+                {loginLoading ? 'Authenticating & Redirecting...' : 'Sign In to Console'}
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
@@ -351,14 +320,14 @@ export default function AuthPage({ initialTab = 'signin' }) {
                   <Sparkles className="w-3.5 h-3.5 text-primary" />
                   Quick Demo Fast-Gates (Instant Fill & Test)
                 </span>
-                <span className="text-[10px] text-muted-fg">Pre-verified credentials</span>
+                <span className="text-[10px] text-muted-fg">Role auto-detected on login</span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <button
                   type="button"
-                  onClick={() => handleQuickCredential('+91 94160 88219', '1234', 'DRIVER')}
-                  className="p-3.5 bg-[#12182d]/80 hover:bg-[#161f38] border border-white/[0.08] hover:border-blue-500/40 rounded-xl text-left transition group shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer"
+                  onClick={() => handleQuickCredential('+91 94160 88219', '1234')}
+                  className="p-3 bg-secondary/60 hover:bg-secondary border border-border hover:border-blue-500/40 rounded-xl text-left transition group cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-xs group-hover:text-blue-400">Baljit Singh</span>
@@ -370,8 +339,8 @@ export default function AuthPage({ initialTab = 'signin' }) {
 
                 <button
                   type="button"
-                  onClick={() => handleQuickCredential('+91 98111 22334', '1234', 'BUYER')}
-                  className="p-3.5 bg-[#12182d]/80 hover:bg-[#161f38] border border-white/[0.08] hover:border-amber-500/40 rounded-xl text-left transition group shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer"
+                  onClick={() => handleQuickCredential('+91 98111 22334', '1234')}
+                  className="p-3 bg-secondary/60 hover:bg-secondary border border-border hover:border-amber-500/40 rounded-xl text-left transition group cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-xs group-hover:text-amber-400">Shree Ram Mill</span>
@@ -383,8 +352,8 @@ export default function AuthPage({ initialTab = 'signin' }) {
 
                 <button
                   type="button"
-                  onClick={() => handleQuickCredential('+91 11 2769 1100', '2026', 'ADMIN')}
-                  className="p-3.5 bg-[#12182d]/80 hover:bg-[#161f38] border border-white/[0.08] hover:border-indigo-500/40 rounded-xl text-left transition group shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer"
+                  onClick={() => handleQuickCredential('+91 11 2769 1100', '2026')}
+                  className="p-3 bg-secondary/60 hover:bg-secondary border border-border hover:border-indigo-500/40 rounded-xl text-left transition group cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-xs group-hover:text-indigo-400">Dr. Vivek Swaminathan</span>
@@ -392,6 +361,19 @@ export default function AuthPage({ initialTab = 'signin' }) {
                   </div>
                   <span className="text-[10px] text-muted-fg block mt-0.5">APMC Mandi Director</span>
                   <span className="text-[9px] font-mono text-primary mt-1 block">+91 11 2769 1100 &bull; PIN: 2026</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleQuickCredential('+91 98123 45099', '1234')}
+                  className="p-3 bg-secondary/60 hover:bg-secondary border border-border hover:border-emerald-500/40 rounded-xl text-left transition group cursor-pointer"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-foreground text-xs group-hover:text-emerald-400">Ramu Sharma</span>
+                    <Sprout className="w-3.5 h-3.5 text-emerald-400" />
+                  </div>
+                  <span className="text-[10px] text-muted-fg block mt-0.5">Smallholder Farmer (Rohtak)</span>
+                  <span className="text-[9px] font-mono text-primary mt-1 block">+91 98123 45099 &bull; PIN: 1234</span>
                 </button>
               </div>
             </div>

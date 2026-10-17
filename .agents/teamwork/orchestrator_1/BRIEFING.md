@@ -54,13 +54,18 @@ Orchestrate the end-to-end implementation of Credentia-inspired cosmic obsidian 
 | explorer_survey_2 | teamwork_preview_explorer | Survey Backend & Telegram Daemon (R5) | completed | c01f901d-a9d5-449d-a6ea-a47b3d51b58f |
 | explorer_survey_3 | teamwork_preview_explorer | Survey Build Integrity & Fast-Gates | completed | 3317e57f-97a7-41cf-85ca-2f63f2ede334 |
 | worker_frontend_1 | teamwork_preview_worker | Implement Frontend UI, 3D Horizon & Animations (M1-M4) | completed | e4797161-112a-4e03-975c-77f779fab640 |
-| worker_backend_1 | teamwork_preview_worker | Implement Live Telegram Bot Daemon & Geo-Sync (M5) | in-progress | 01cc14b5-a085-4327-90f9-77a20a1773bf |
-| test_writer_1 | teamwork_preview_test_writer | E2E Testing Suite & TEST_INFRA.md Architecture | in-progress | 8d6b3916-f3bd-435c-9a6a-9e797f287d97 |
+| worker_backend_1 | teamwork_preview_worker | Implement Live Telegram Bot Daemon & Geo-Sync (M5) | completed | 01cc14b5-a085-4327-90f9-77a20a1773bf |
+| test_writer_1 | teamwork_preview_test_writer | E2E Testing Suite & TEST_INFRA.md Architecture | completed | 8d6b3916-f3bd-435c-9a6a-9e797f287d97 |
+| reviewer_1 | teamwork_preview_reviewer | Review Frontend UI & Credentia Themes | in-progress | b21beba5-d827-4211-a3fc-37fd54b2551b |
+| reviewer_2 | teamwork_preview_reviewer | Review Backend, Telegram & Fast-Gates | in-progress | 81218158-d6c8-4fc8-b1ab-fa434dd2ff3d |
+| challenger_1 | teamwork_preview_challenger | Challenge Frontend Performance & Visuals | in-progress | 58c652d2-d6c1-4e7a-b402-068a83c88359 |
+| challenger_2 | teamwork_preview_challenger | Challenge Backend Concurrency & Stress | in-progress | 3f39cfb8-bbbc-416f-9fed-d20ce668adef |
+| auditor_1 | teamwork_preview_auditor | Forensic Integrity Audit | in-progress | dfc73e4f-d60b-44b2-84a1-a1ccb8db132f |
 
 ## Succession Status
 - Succession required: no
-- Spawn count: 6 / 16
-- Pending subagents: e4797161-112a-4e03-975c-77f779fab640, 01cc14b5-a085-4327-90f9-77a20a1773bf, 8d6b3916-f3bd-435c-9a6a-9e797f287d97
+- Spawn count: 11 / 16
+- Pending subagents: b21beba5-d827-4211-a3fc-37fd54b2551b, 81218158-d6c8-4fc8-b1ab-fa434dd2ff3d, 58c652d2-d6c1-4e7a-b402-068a83c88359, 3f39cfb8-bbbc-416f-9fed-d20ce668adef, dfc73e4f-d60b-44b2-84a1-a1ccb8db132f
 - Predecessor: none
 - Successor: not yet spawned
 

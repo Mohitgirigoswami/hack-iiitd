@@ -5,34 +5,34 @@
 /* 1. Theme: Obsidian Mandi (Cyber-Agritech Luxury Dark: Deep Obsidian Slate, Electric Emerald & Harvest Gold) */
 :root,
 [data-theme="dark-mandi"] {
-  --color-bg: 8 10 25;                 /* #080a19 deep cosmic obsidian */
+  --color-bg: 10 13 18;                /* #0a0d12 deep luxury obsidian slate */
   --color-fg: 248 250 252;             /* #f8fafc crisp pure white */
-  --color-card: 13 18 36;              /* #0d1224 sleek cosmic glassmorphic panel */
+  --color-card: 16 21 29;              /* #10151d sleek dark graphite panel */
   --color-card-fg: 248 250 252;        /* #f8fafc */
   --color-primary: 16 185 129;         /* #10b981 electric agri emerald */
   --color-primary-fg: 255 255 255;     /* pure white text on emerald button */
-  --color-secondary: 18 24 45;         /* #12182d refined cosmic slate container */
+  --color-secondary: 22 29 40;         /* #161d28 refined slate container */
   --color-secondary-fg: 226 232 240;   /* #e2e8f0 */
-  --color-muted: 15 20 38;             /* #0f1426 */
+  --color-muted: 18 24 33;             /* #121821 */
   --color-muted-fg: 148 163 184;       /* #94a3b8 clean readable slate-400 */
   --color-accent: 245 158 11;          /* #f59e0b harvest mustard gold */
   --color-accent-fg: 0 0 0;            /* #000000 */
-  --color-border: 255 255 255 / 0.08;  /* hairline white/0.08, never harsh */
+  --color-border: 30 38 51;            /* #1e2633 ultra-fine subtle border, never harsh white */
 
-  --background: #080a19;
+  --background: #0a0d12;
   --foreground: #f8fafc;
-  --card: #0d1224;
+  --card: #10151d;
   --card-foreground: #f8fafc;
   --primary: #10b981;
   --primary-foreground: #ffffff;
-  --secondary: #12182d;
+  --secondary: #161d28;
   --secondary-foreground: #e2e8f0;
-  --muted: #0f1426;
+  --muted: #121821;
   --muted-foreground: #94a3b8;
   --accent: #f59e0b;
-  --border: rgba(255, 255, 255, 0.08);
+  --border: #1e2633;
   --ring: #10b981;
-  --glow-color: rgba(16, 185, 129, 0.25);
+  --glow-color: rgba(16, 185, 129, 0.2);
 }
 
 /* 2. Theme: Sunlight Field (Clean High-Contrast Daylight, Rich Field Emerald on Crisp Canvas) */
@@ -123,153 +123,3 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--color-muted-fg));
 }
-
-/* --- Credentia-Inspired Visual & Animation Engine --- */
-
-@keyframes laserShimmer {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-@keyframes laserSweep {
-  0%, 100% { top: 3%; opacity: 0.85; }
-  50% { top: 95%; opacity: 1; }
-}
-
-@keyframes gridMove {
-  0% { background-position: 0 0; }
-  100% { background-position: 0 44px; }
-}
-
-@keyframes marqueeLeft {
-  0% { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(-50%, 0, 0); }
-}
-
-@keyframes marqueeRight {
-  0% { transform: translate3d(-50%, 0, 0); }
-  100% { transform: translate3d(0, 0, 0); }
-}
-
-@keyframes laserScan {
-  0% { top: 3%; opacity: 0.85; }
-  50% { top: 95%; opacity: 1; }
-  100% { top: 3%; opacity: 0.85; }
-}
-
-@keyframes orbFloat {
-  0%, 100% { transform: translateY(0px) scale(1); }
-  50% { transform: translateY(-20px) scale(1.05); }
-}
-
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.35; filter: blur(90px); }
-  50% { opacity: 0.65; filter: blur(120px); }
-}
-
-/* Ticker Animations */
-.animate-marquee-left {
-  display: flex;
-  width: max-content;
-  animation: marqueeLeft 32s linear infinite;
-  will-change: transform;
-}
-
-.animate-marquee-right {
-  display: flex;
-  width: max-content;
-  animation: marqueeRight 34s linear infinite;
-  will-change: transform;
-}
-
-.animate-marquee-left:hover,
-.animate-marquee-right:hover {
-  animation-play-state: paused;
-}
-
-/* Credentia Utility Classes */
-.laser-progress-bar {
-  background: linear-gradient(90deg, #10b981 0%, #818cf8 35%, #f59e0b 70%, #10b981 100%);
-  background-size: 300% 100%;
-  animation: laserShimmer 4.5s ease infinite;
-  box-shadow: 0 0 12px 2px rgba(16, 185, 129, 0.75), 0 0 22px 4px rgba(129, 140, 248, 0.5);
-}
-
-.cosmic-cyber-grid {
-  transform: rotateX(62deg);
-  transform-origin: 50% 0%;
-  background-image: 
-    linear-gradient(to right, rgba(16, 185, 129, 0.22) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(129, 140, 248, 0.22) 1px, transparent 1px);
-  background-size: 44px 44px;
-  animation: gridMove 16s linear infinite;
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%);
-}
-
-.scanner-laser-line {
-  box-shadow: 0 0 16px 3px rgba(20, 184, 166, 0.85), 0 0 32px 6px rgba(6, 182, 212, 0.5);
-  animation: laserSweep 3.2s ease-in-out infinite;
-}
-
-.starfield-micro-dots {
-  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
-  background-size: 28px 28px;
-}
-
-/* 3D Cockpit Tilt */
-.credentia-cockpit-tilt {
-  transform: perspective(1000px) rotateX(7deg) scale(0.98);
-  transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.5s ease;
-}
-
-.credentia-cockpit-tilt:hover {
-  transform: perspective(1000px) rotateX(0deg) scale(1);
-}
-
-/* Glassmorphic card styling matching credentiaonline.in */
-.credentia-glass {
-  background: linear-gradient(180deg, rgba(13, 18, 36, 0.75) 0%, rgba(8, 10, 25, 0.88) 100%);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 20px 48px -12px rgba(0, 0, 0, 0.6);
-}
-
-.credentia-glass:hover {
-  border-color: rgba(129, 140, 248, 0.3);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 24px 60px -12px rgba(16, 185, 129, 0.2);
-}
-
-/* Ambient Radial Blur Orbs */
-.animate-orb-emerald {
-  animation: orbFloat 14s ease-in-out infinite;
-  will-change: transform;
-}
-
-.animate-orb-amber {
-  animation: orbFloat 18s ease-in-out infinite 2s;
-  will-change: transform;
-}
-
-.animate-orb-indigo {
-  animation: orbFloat 16s ease-in-out infinite 4s;
-  will-change: transform;
-}
-
-/* Reduced motion accessibility support */
-@media (prefers-reduced-motion: reduce) {
-  .laser-progress-bar,
-  .cosmic-cyber-grid,
-  .scanner-laser-line,
-  .animate-marquee-left,
-  .animate-marquee-right,
-  .animate-orb-emerald,
-  .animate-orb-amber,
-  .animate-orb-indigo {
-    animation: none !important;
-  }
-}
-
-
