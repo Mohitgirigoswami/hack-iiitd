@@ -190,68 +190,47 @@ export default function LandingPage() {
         </button>
       </div>
 
-      {/* Hackathon Stage Progression & Evaluation Roadmap */}
-      <div className="p-6 bg-card border border-border rounded-3xl space-y-5">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-border pb-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-bold text-primary uppercase tracking-wider mb-1">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              IIIT-Delhi Hackathon Milestones
-            </div>
-            <h3 className="text-lg font-black text-foreground">Phase Progression & Development Scope</h3>
-          </div>
-          <span className="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30">
-            Phase 1: Live Core Prototype Ready
-          </span>
+      {/* Farm-Gate Platform Security & Economic Principles */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border">
+        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-1">
+          <span className="text-xl">📞</span>
+          <h4 className="text-xs font-bold text-foreground">Zero-App Ingestion</h4>
+          <p className="text-[11px] text-muted-fg leading-relaxed">
+            1800-KHET-OS toll-free IVR operable on any ₹1,200 feature phone with zero 4G required.
+          </p>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Phase 1 Column */}
-          <div className="p-4 bg-secondary/40 border-2 border-primary/50 rounded-2xl space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-primary">Phase 1 (Current)</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-primary text-primary-foreground">Live Demo</span>
-            </div>
-            <h4 className="text-sm font-bold text-foreground">Core Farm-Gate Engine</h4>
-            <ul className="text-xs text-muted-fg space-y-1.5 list-disc list-inside">
-              <li><strong className="text-foreground">Toll-Free IVR Phone (/call):</strong> DTMF Key 2 booking with Hindi voice.</li>
-              <li><strong className="text-foreground">Discrete Bag Knapsack:</strong> 50kg bag integer packing (73.3% ➔ 100%).</li>
-              <li><strong className="text-foreground">Pre-Loading Quality Gate:</strong> Driver checklist with ₹0 sun-drying deferral.</li>
-              <li><strong className="text-foreground">Wholesale Escrow:</strong> 20% advance Razorpay custody lock.</li>
-            </ul>
-          </div>
-
-          {/* Phase 2 Column */}
-          <div className="p-4 bg-secondary/30 border border-dashed border-border rounded-2xl space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-fg">Phase 2 (Next Sprint)</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-secondary text-foreground border border-border">Scheduled</span>
-            </div>
-            <h4 className="text-sm font-bold text-foreground">Identity & Rural Security</h4>
-            <ul className="text-xs text-muted-fg space-y-1.5 list-disc list-inside">
-              <li><strong className="text-foreground">Aadhaar & Mobile OTP Auth:</strong> Multi-role JWT session management.</li>
-              <li><strong className="text-foreground">Live GPS Telematics:</strong> Leaflet tracking along unmapped dirt tracks.</li>
-              <li><strong className="text-foreground">Payout Webhooks:</strong> Automated UPI disbursement upon dock arrival.</li>
-              <li><strong className="text-foreground">Mandi Multi-Bidding:</strong> Live reverse auction for consolidated lots.</li>
-            </ul>
-          </div>
-
-          {/* Phase 3 Column */}
-          <div className="p-4 bg-secondary/20 border border-dashed border-border rounded-2xl space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold uppercase tracking-wider text-muted-fg">Phase 3 (Grand Finale)</span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-secondary text-foreground border border-border">Future Vision</span>
-            </div>
-            <h4 className="text-sm font-bold text-foreground">Computer Vision & Meta Bot</h4>
-            <ul className="text-xs text-muted-fg space-y-1.5 list-disc list-inside">
-              <li><strong className="text-foreground">Weighbridge OCR:</strong> Automated parsing of APMC Kanta Parchi slips.</li>
-              <li><strong className="text-foreground">WhatsApp Cloud API:</strong> Voice note transcription & pin-drop geo-snapping.</li>
-              <li><strong className="text-foreground">Offline-First PWA:</strong> ServiceWorker sync for 2G rural deadzones.</li>
-              <li><strong className="text-foreground">IoT Moisture Gateway:</strong> ESP32 3-point sample variance validator.</li>
-            </ul>
-          </div>
+        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-1">
+          <span className="text-xl">⚖️</span>
+          <h4 className="text-xs font-bold text-foreground">Discrete Knapsack</h4>
+          <p className="text-[11px] text-muted-fg leading-relaxed">
+            Strict 50kg standard bag multiples prevent lot fragmentation and simplify physical accounting.
+          </p>
+        </div>
+        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-1">
+          <span className="text-xl">🛡️</span>
+          <h4 className="text-xs font-bold text-foreground">Escrow Custody</h4>
+          <p className="text-[11px] text-muted-fg leading-relaxed">
+            20% buyer advance locked before ignition; 80% settled electronically against weighbridge slips.
+          </p>
+        </div>
+        <div className="p-4 bg-card/60 border border-border/80 rounded-2xl space-y-1">
+          <span className="text-xl">🌾</span>
+          <h4 className="text-xs font-bold text-foreground">₹0 Farmer Fees</h4>
+          <p className="text-[11px] text-muted-fg leading-relaxed">
+            Zero commission on smallholders. Value captured purely via 1.5% institutional buyer take-rate.
+          </p>
         </div>
       </div>
+
+      {/* Production Footer Signature */}
+      <footer className="text-center py-6 border-t border-border/50 text-xs text-muted-fg space-y-1">
+        <p className="font-semibold text-foreground/80">
+          KhetOS (खेतOS) &bull; The Farm-Gate Operating System
+        </p>
+        <p className="text-[11px]">
+          From Kaccha Rasta to Pucca Mandi &bull; Connecting Smallholder Corridors to Wholesale Processors
+        </p>
+      </footer>
     </div>
   );
 }

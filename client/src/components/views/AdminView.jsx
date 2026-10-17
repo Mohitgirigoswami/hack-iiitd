@@ -143,6 +143,62 @@ export default function AdminView({ state, onRefresh }) {
           </div>
         </div>
 
+        {/* Visual Bolero Cargo Bay (30 Discrete 50kg Gunny Sacks) */}
+        <div className="p-4 bg-secondary/50 rounded-2xl border border-border space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-foreground">Bolero Flatbed Cargo Manifest (30 &times; 50kg Sacks)</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-card border border-border text-muted-fg">
+                Discrete Knapsack
+              </span>
+            </div>
+            <div className="flex items-center gap-3 text-[11px] text-muted-fg">
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-emerald-500 inline-block" /> Suresh (12)</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded bg-blue-500 inline-block" /> Dinesh (10)</span>
+              <span className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded inline-block ${pool.capacity_percentage >= 99 ? 'bg-amber-500' : 'border border-dashed border-primary animate-pulse'}`} />
+                Ramu (8)
+              </span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-6 sm:grid-cols-10 md:grid-cols-15 gap-1.5 pt-1">
+            {Array.from({ length: 30 }).map((_, i) => {
+              const isSuresh = i < 12;
+              const isDinesh = i >= 12 && i < 22;
+              const isRamu = i >= 22;
+              const isRamuLoaded = isRamu && pool.capacity_percentage >= 99;
+
+              let bgClass = "bg-secondary border border-dashed border-border text-muted-fg/40";
+              let title = "Empty Bay Slot (50kg)";
+
+              if (isSuresh) {
+                bgClass = "bg-emerald-500/20 border border-emerald-500/50 text-emerald-700 dark:text-emerald-400 font-bold";
+                title = `Suresh Kumar • Bag #${i + 1} (50kg)`;
+              } else if (isDinesh) {
+                bgClass = "bg-blue-500/20 border border-blue-500/50 text-blue-700 dark:text-blue-400 font-bold";
+                title = `Dinesh Chillar • Bag #${i + 1} (50kg)`;
+              } else if (isRamuLoaded) {
+                bgClass = "bg-amber-500/25 border border-amber-500/60 text-amber-800 dark:text-amber-400 font-bold animate-pulse";
+                title = `Ramu Sharma • Bag #${i + 1} (50kg)`;
+              } else {
+                bgClass = "border border-dashed border-primary/50 bg-primary/10 text-primary font-bold animate-pulse";
+                title = `Reserved for Ramu (4 Qtl) • Key 2 pending`;
+              }
+
+              return (
+                <div
+                  key={i}
+                  title={title}
+                  className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-mono transition-all duration-500 select-none shadow-xs ${bgClass}`}
+                >
+                  {i + 1}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Live Call Telephony Prompt Banner */}
         {pool.capacity_percentage < 99 ? (
           <div className="p-4 bg-primary/15 border border-primary/40 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3">

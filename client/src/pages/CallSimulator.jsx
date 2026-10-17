@@ -183,19 +183,37 @@ export default function CallSimulator() {
                   <Volume2 className={`w-4 h-4 ${isSpeaking ? 'animate-bounce text-primary' : 'text-muted-fg'}`} />
                   IVR Vernacular Audio Stream (Hindi)
                 </span>
-                {isSpeaking && (
-                  <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Speaking
-                  </span>
+                {isSpeaking ? (
+                  <div className="flex items-center gap-1">
+                    <span className="w-1 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="w-1 h-4 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="w-1 h-3 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="w-1 h-5 bg-emerald-500 rounded-full animate-pulse" />
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold ml-1">
+                      Speaking
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-[10px] text-muted-fg">Audio standby</span>
                 )}
               </div>
-              <p className="italic text-muted-fg text-[11px] leading-relaxed">
+              <p className="italic text-foreground text-xs leading-relaxed font-medium">
                 "{spokenText || 'Audio prompt playing...'}"
               </p>
             </div>
           )}
         </div>
+
+        {/* Quick Stage Key 2 Demo Button */}
+        {callActive && !poolJoined && (
+          <button
+            onClick={() => handleKeypadPress('2')}
+            className="w-full py-2.5 px-3 bg-primary/15 hover:bg-primary/25 text-primary border border-primary/40 rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 animate-pulse shadow-sm active:scale-95"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            Stage Shortcut: Press Key 2 (Pool Ramu's 4 Qtl & Fill Truck ⚡)
+          </button>
+        )}
 
         {/* 100% Pool Full Celebratory Banner */}
         {poolJoined && (
