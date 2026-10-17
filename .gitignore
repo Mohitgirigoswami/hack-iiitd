@@ -1,0 +1,12 @@
+# Internal and private folders
+internal/
+private/
+
+# Environment files
+.env
+*.env
+*.local
+
+# Operating System files
+.DS_Store
+Thumbs.db
