@@ -1,0 +1,53 @@
+{
+  "Wheat": {
+    "Yellow Rust": {
+      "name_hi": "पीला रतुआ (Yellow Rust)",
+      "chemical_salt": "Propiconazole 25% EC",
+      "dosage": "1 ml per litre of water (200 ml in 200L water per acre)",
+      "dosage_hi": "1 लीटर पानी में 1 मिलीलीटर मिलाकर छिड़कें (एक एकड़ में 200ml)",
+      "market_price_approx": "₹180 - ₹220 per 250ml",
+      "phi_days": 30,
+      "warning_hi": "दुकानदार से महंगी ब्रांडेड दवा न लें, केवल प्रोपिकोनाज़ोल 25% EC साल्ट मांगें।"
+    },
+    "Loose Smut": {
+      "name_hi": "कंगुआ रोग (Loose Smut)",
+      "chemical_salt": "Carboxin 37.5% + Thiram 37.5% WS",
+      "dosage": "2.5 grams per kg seed treatment",
+      "dosage_hi": "2.5 ग्राम प्रति किलो बीज शोधन",
+      "market_price_approx": "₹140 per 100g",
+      "phi_days": 45,
+      "warning_hi": "बीज शोधन के समय ही इसका प्रयोग करें।"
+    }
+  },
+  "Mustard": {
+    "Alternaria Blight": {
+      "name_hi": "अल्टरनेरिया झुलसा (Alternaria Blight)",
+      "chemical_salt": "Mancozeb 75% WP",
+      "dosage": "2 grams per litre of water (500g in 250L water per acre)",
+      "dosage_hi": "2 ग्राम प्रति लीटर पानी में मिलाकर छिड़कें",
+      "market_price_approx": "₹150 - ₹190 per 500g",
+      "phi_days": 15,
+      "warning_hi": "दुकानदार के महंगे कॉकटेल से बचें, सीधा मैंकोज़ेब 75% WP मांगें।"
+    },
+    "White Rust": {
+      "name_hi": "सफेद रतुआ (White Rust)",
+      "chemical_salt": "Metalaxyl 8% + Mancozeb 64% WP",
+      "dosage": "2.5 grams per litre of water",
+      "dosage_hi": "2.5 ग्राम प्रति लीटर पानी में मिलाकर छिड़कें",
+      "market_price_approx": "₹220 per 250g",
+      "phi_days": 20,
+      "warning_hi": "पत्तियों के निचले हिस्से पर छिड़काव अवश्य करें।"
+    }
+  },
+  "Paddy": {
+    "Bacterial Leaf Blight": {
+      "name_hi": "जीवाणु झुलसा (Bacterial Blight)",
+      "chemical_salt": "Copper Oxychloride 50% WP + Streptocycline",
+      "dosage": "2.5g Copper Oxychloride + 0.05g Streptocycline per litre",
+      "dosage_hi": "2.5 ग्राम कॉपर ऑक्सीक्लोराइड + 1 पाउच स्ट्रेप्टोसाइक्लिन",
+      "market_price_approx": "₹160 per 500g",
+      "phi_days": 25,
+      "warning_hi": "यूरिया का छिड़काव तुरंत बंद कर दें।"
+    }
+  }
+}

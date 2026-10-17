@@ -1,0 +1,32 @@
+{
+  "Mustard": {
+    "commodity_hi": "सरसों",
+    "mandi": "Azadpur, Delhi",
+    "modal_price": 5420,
+    "min_price": 5200,
+    "max_price": 5580,
+    "local_trader_price": 4700,
+    "unit": "per Quintal (100kg)",
+    "last_updated": "2026-10-17 09:30 AM"
+  },
+  "Wheat": {
+    "commodity_hi": "गेहूँ (कनक)",
+    "mandi": "Najafgarh, Delhi",
+    "modal_price": 2450,
+    "min_price": 2320,
+    "max_price": 2520,
+    "local_trader_price": 2150,
+    "unit": "per Quintal (100kg)",
+    "last_updated": "2026-10-17 09:30 AM"
+  },
+  "Paddy": {
+    "commodity_hi": "धान (Basmati 1509)",
+    "mandi": "Narela, Delhi",
+    "modal_price": 3650,
+    "min_price": 3400,
+    "max_price": 3800,
+    "local_trader_price": 3100,
+    "unit": "per Quintal (100kg)",
+    "last_updated": "2026-10-17 09:30 AM"
+  }
+}
