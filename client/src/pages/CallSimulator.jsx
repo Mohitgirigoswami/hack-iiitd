@@ -67,9 +67,54 @@ export default function CallSimulator() {
     }
   };
 
-  const speakHindi = (text) => {
+  const playAudioB64 = (b64) => {
+    if (!b64) return;
+    try {
+      if (window.khetosAudio) {
+        window.khetosAudio.pause();
+        window.khetosAudio.currentTime = 0;
+      }
+      const audio = new Audio("data:audio/mp3;base64," + b64);
+      window.khetosAudio = audio;
+      setIsSpeaking(true);
+      audio.onended = () => setIsSpeaking(false);
+      audio.onerror = () => setIsSpeaking(false);
+      audio.play().catch(e => {
+        console.warn("Audio autoplay blocked:", e);
+        setIsSpeaking(false);
+      });
+    } catch (e) {
+      console.warn("Audio play error:", e);
+      setIsSpeaking(false);
+    }
+  };
+
+  const speakHindi = async (text, directB64 = null) => {
     setSpokenText(text);
     setIsSpeaking(true);
+
+    if (directB64) {
+      playAudioB64(directB64);
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.audio_base64) {
+          playAudioB64(data.audio_base64);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("gTTS fetch error, using speech synth fallback:", err);
+    }
+
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
@@ -93,6 +138,10 @@ export default function CallSimulator() {
   const handleEndCall = () => {
     setCallActive(false);
     setIsSpeaking(false);
+    if (window.khetosAudio) {
+      window.khetosAudio.pause();
+      window.khetosAudio.currentTime = 0;
+    }
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -122,7 +171,7 @@ export default function CallSimulator() {
       setLoading(false);
 
       if (data.voice_prompt_hi) {
-        speakHindi(data.voice_prompt_hi);
+        speakHindi(data.voice_prompt_hi, data.audio_base64);
       }
 
       if (digit === '2') {

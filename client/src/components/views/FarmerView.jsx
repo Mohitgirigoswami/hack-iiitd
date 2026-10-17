@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Phone, Truck, ShieldAlert, Sparkles, Volume2, Upload, AlertCircle, CheckCircle2, Sprout } from 'lucide-react';
+import { MapPin, Phone, Truck, ShieldAlert, Sparkles, Volume2, Upload, AlertCircle, CheckCircle2, Sprout, Play, Square } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 
 export default function FarmerView({ state, onRefresh }) {
@@ -9,6 +9,34 @@ export default function FarmerView({ state, onRefresh }) {
   const [advisoryInput, setAdvisoryInput] = useState('सरसों के पत्तों पर सफेद फफूंद (White Rust) और तना सड़न के लक्षण हैं।');
   const [advisoryResult, setAdvisoryResult] = useState(null);
   const [advising, setAdvising] = useState(false);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+
+  const toggleAudio = () => {
+    if (!advisoryResult?.audio_base64) return;
+    if (isPlayingAudio && window.advisoryAudio) {
+      window.advisoryAudio.pause();
+      window.advisoryAudio.currentTime = 0;
+      setIsPlayingAudio(false);
+      return;
+    }
+    try {
+      if (window.advisoryAudio) {
+        window.advisoryAudio.pause();
+      }
+      const audio = new Audio("data:audio/mp3;base64," + advisoryResult.audio_base64);
+      window.advisoryAudio = audio;
+      setIsPlayingAudio(true);
+      audio.onended = () => setIsPlayingAudio(false);
+      audio.onerror = () => setIsPlayingAudio(false);
+      audio.play().catch(e => {
+        console.warn("Audio playback blocked:", e);
+        setIsPlayingAudio(false);
+      });
+    } catch (e) {
+      console.warn("Audio error:", e);
+      setIsPlayingAudio(false);
+    }
+  };
 
   useEffect(() => {
     fetchPrices();
@@ -346,9 +374,36 @@ export default function FarmerView({ state, onRefresh }) {
               </div>
 
               {(advisoryResult.audio_prescription_hi || advisoryResult.spoken_text_hi || advisoryResult.audio_base64) && (
-                <div className="flex items-center gap-2 p-2.5 bg-primary/20 rounded-lg border border-primary/30 text-xs text-primary">
-                  <Volume2 className="w-4 h-4 shrink-0 animate-pulse" />
-                  <span>Vernacular Audio Prescription: "{advisoryResult.spoken_text_hi || 'Audio prescription ready in Hindi'}"</span>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-primary/10 rounded-xl border border-primary/25">
+                  <div className="flex items-center gap-2.5 text-xs text-foreground">
+                    <Volume2 className={`w-4 h-4 text-primary shrink-0 ${isPlayingAudio ? 'animate-bounce' : 'animate-pulse'}`} />
+                    <div>
+                      <span className="font-semibold text-primary block">Vernacular Voice Note (ICAR Prescription)</span>
+                      <span className="text-muted-fg text-[11px] line-clamp-1">{advisoryResult.spoken_text_hi || 'Audio prescription ready in Hindi'}</span>
+                    </div>
+                  </div>
+                  {advisoryResult.audio_base64 && (
+                    <button
+                      onClick={toggleAudio}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shrink-0 ${
+                        isPlayingAudio 
+                          ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30 hover:bg-rose-500/30'
+                          : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm'
+                      }`}
+                    >
+                      {isPlayingAudio ? (
+                        <>
+                          <Square className="w-3.5 h-3.5 fill-current" />
+                          <span>Stop Audio</span>
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-3.5 h-3.5 fill-current" />
+                          <span>Play Hindi Audio (gTTS)</span>
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

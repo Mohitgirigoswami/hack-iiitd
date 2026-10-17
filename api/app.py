@@ -63,29 +63,57 @@ def handle_call_keypad():
             channel="ivr_call"
         )
         hindi_reply = "रामू चाचा, आपकी 4 क्विंटल सरसों गाड़ी में जुड़ गई है। महिंद्रा बोलेरो 100% भर चुकी है और आज़ादपुर मंडी के लिए रवाना हो रही है।"
+        audio_bytes = generate_hindi_audio(hindi_reply)
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
             "status": "POOL_JOINED_SUCCESS",
             "digit": "2",
             "message": "Lot added to Bolero pool!",
             "voice_prompt_hi": hindi_reply,
+            "audio_base64": audio_b64,
             "lot": lot,
             "current_pool": state.active_pool
         })
     elif digit == "1":
         price = get_mandi_price("Mustard")
         hindi_reply = f"आज आज़ादपुर मंडी में सरसों का भाव ₹{price['modal_price']} प्रति क्विंटल है। गांव के आढ़ती से ₹720 ज्यादा।"
+        audio_bytes = generate_hindi_audio(hindi_reply)
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
             "status": "PRICE_FETCHED",
             "digit": "1",
             "price_data": price,
-            "voice_prompt_hi": hindi_reply
+            "voice_prompt_hi": hindi_reply,
+            "audio_base64": audio_b64
         })
     else:
+        hindi_reply = "कृपया सही बटन दबाएं। मंडी भाव के लिए 1, गाड़ी पूलिंग के लिए 2।"
+        audio_bytes = generate_hindi_audio(hindi_reply)
+        audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
             "status": "UNKNOWN_DIGIT",
             "digit": digit,
-            "voice_prompt_hi": "कृपया सही बटन दबाएं। मंडी भाव के लिए 1, गाड़ी पूलिंग के लिए 2।"
+            "voice_prompt_hi": hindi_reply,
+            "audio_base64": audio_b64
         })
+
+@app.route("/api/tts", methods=["POST"])
+def synthesize_tts():
+    """
+    Synthesizes natural Hindi speech using gTTS and returns base64 MP3 audio.
+    """
+    data = request.get_json(silent=True) or {}
+    text = data.get("text", "")
+    if not text:
+        return jsonify({"error": "No text provided"}), 400
+    
+    audio_bytes = generate_hindi_audio(text)
+    audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
+    return jsonify({
+        "status": "SUCCESS",
+        "audio_base64": audio_b64,
+        "text": text
+    })
 
 @app.route("/api/advisory/scan", methods=["POST"])
 def scan_crop_disease():

@@ -42,17 +42,26 @@ def get_prescription(crop, disease):
         "warning_hi": prescription.get("warning_hi")
     }
 
+_tts_cache = {}
+
 def generate_hindi_audio(text):
     """
-    Synthesizes Hindi voice note using gTTS.
+    Synthesizes Hindi voice note using gTTS with caching.
     Returns bytes buffer.
     """
+    if not text:
+        return None
+    if text in _tts_cache:
+        return _tts_cache[text]
     try:
         tts = gTTS(text=text, lang="hi", slow=False)
         fp = io.BytesIO()
         tts.write_to_fp(fp)
         fp.seek(0)
-        return fp.read()
+        data = fp.read()
+        _tts_cache[text] = data
+        return data
     except Exception as e:
         print(f"[Error] Audio synthesis failed: {e}")
         return None
+
