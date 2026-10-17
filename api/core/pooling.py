@@ -19,7 +19,8 @@ def calculate_freight_split(lots, total_rent=2400):
     splits = {}
     for lot in lots:
         share = (lot["allocated_quintals"] / total_loaded) * total_rent
-        splits[lot["farmer_id"]] = {
+        farmer_key = lot.get("farmer_id", lot.get("farmer_name", lot.get("lot_id", "FARMER-UNKNOWN")))
+        splits[farmer_key] = {
             "allocated_quintals": lot["allocated_quintals"],
             "allocated_bags": int(lot["allocated_quintals"] / BAG_WEIGHT_QUINTALS),
             "freight_cost_rs": round(share, 2),
@@ -45,12 +46,14 @@ def match_buyer_order(active_lots, order_quantity_quintals):
         if available_qty <= 0:
             continue
 
+        farmer_id = lot.get("farmer_id", lot.get("farmer_name", lot.get("lot_id", "FARMER-UNKNOWN")))
+
         if available_qty <= remaining_needed:
             # Full lot allocation
             matched.append({
                 "lot_id": lot["lot_id"],
                 "farmer_name": lot["farmer_name"],
-                "farmer_id": lot["farmer_id"],
+                "farmer_id": farmer_id,
                 "allocated_quintals": available_qty,
                 "status": "FULLY_MATCHED"
             })
@@ -66,7 +69,7 @@ def match_buyer_order(active_lots, order_quantity_quintals):
             matched.append({
                 "lot_id": lot["lot_id"],
                 "farmer_name": lot["farmer_name"],
-                "farmer_id": lot["farmer_id"],
+                "farmer_id": farmer_id,
                 "allocated_quintals": discrete_allocated,
                 "status": "PARTIAL_MATCHED"
             })

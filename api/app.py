@@ -1,4 +1,5 @@
 import os
+import time
 import base64
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
@@ -45,7 +46,7 @@ def handle_call_keypad():
     Key '1' = Price Check
     Key '2' = Join Bolero Truck Pool (Adds Ramu's 4 quintals!)
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     digit = str(data.get("digit", "2"))
     farmer_name = data.get("farmer_name", "Ramu Sharma")
     village = data.get("village", "Najafgarh")
@@ -92,9 +93,20 @@ def scan_crop_disease():
     Receives leaf photo / crop name, runs Gemini Vision,
     queries verified ICAR chemical database, and synthesizes Hindi voice note.
     """
-    crop = request.form.get("crop", "Mustard")
-    file = request.files.get("image")
-    image_bytes = file.read() if file else None
+    if request.is_json:
+        json_data = request.get_json(silent=True) or {}
+        crop = json_data.get("crop", "Mustard")
+        b64_data = json_data.get("image_base64")
+        image_bytes = None
+        if b64_data:
+            try:
+                image_bytes = base64.b64decode(b64_data)
+            except Exception:
+                image_bytes = None
+    else:
+        crop = request.form.get("crop", "Mustard")
+        file = request.files.get("image")
+        image_bytes = file.read() if file else None
 
     # Step 1: Vision feature extraction (constrained output)
     diagnosis = analyze_crop_leaf_disease(image_bytes=image_bytes, crop_hint=crop)
@@ -121,7 +133,7 @@ def driver_inspect_lot():
     Driver pre-loading inspection checklist (/driver).
     Approves or defers lot at the farm gate.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     lot_id = data.get("lot_id")
     action = data.get("action", "APPROVE") # "APPROVE" or "DEFER"
 
@@ -151,7 +163,7 @@ def place_buyer_order():
     """
     Institutional buyer order placement & hybrid knapsack matching.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     buyer_name = data.get("buyer_name", "Shree Ram Roller Flour Mill")
     quantity_quintals = float(data.get("quantity_quintals", 1100))
     bid_price = float(data.get("bid_price", 5420))
@@ -180,7 +192,7 @@ def buyer_create_payment():
     Creates Razorpay Escrow order for buyer advance deposit.
     Supports live Razorpay + graceful fallback.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     amount_rs = float(data.get("amount_rs", 50000))
     order_id = data.get("order_id", f"ORD-{int(time.time()) % 1000}")
     buyer_name = data.get("buyer_name", "Agri Buyer")

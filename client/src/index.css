@@ -2,45 +2,124 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  :root {
-    --background: #0c0d0e;
-    --foreground: #f8fafc;
-    --card: #16181b;
-    --card-foreground: #f8fafc;
-    --primary: #f59e0b;
-    --primary-foreground: #000000;
-    --secondary: #22252a;
-    --secondary-foreground: #f1f5f9;
-    --muted: #1a1d22;
-    --muted-foreground: #94a3b8;
-    --accent: #10b981;
-    --accent-foreground: #ffffff;
-    --border: #292c33;
-    --ring: #f59e0b;
-    --glow-color: rgba(245, 158, 11, 0.15);
-  }
+/* 1. Theme: Minimalist Black & White (Architectural Monochrome, Stark White on Deep Black) */
+:root,
+[data-theme="dark-mandi"] {
+  --color-bg: 9 9 11;                  /* #09090b deep obsidian black */
+  --color-fg: 255 255 255;             /* #ffffff stark crisp white */
+  --color-card: 18 18 21;              /* #121215 architectural card panel */
+  --color-card-fg: 255 255 255;        /* #ffffff */
+  --color-primary: 255 255 255;        /* #ffffff pure white button */
+  --color-primary-fg: 0 0 0;           /* pure black text on button */
+  --color-secondary: 28 29 34;         /* #1c1d22 clean zinc panel */
+  --color-secondary-fg: 244 244 245;   /* #f4f4f5 */
+  --color-muted: 24 24 27;             /* #18181b */
+  --color-muted-fg: 161 161 170;       /* #a1a1aa neutral zinc text */
+  --color-accent: 39 39 42;            /* #27272a */
+  --color-accent-fg: 244 244 245;      /* #f4f4f5 */
+  --color-border: 39 39 42;            /* #27272a crisp monochrome border */
 
-  body {
-    background-color: var(--background);
-    color: var(--foreground);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    transition: background-color 0.25s ease, color 0.25s ease;
-  }
+  --background: #09090b;
+  --foreground: #ffffff;
+  --card: #121215;
+  --card-foreground: #ffffff;
+  --primary: #ffffff;
+  --primary-foreground: #000000;
+  --secondary: #1c1d22;
+  --secondary-foreground: #f4f4f5;
+  --muted: #18181b;
+  --muted-foreground: #a1a1aa;
+  --accent: #27272a;
+  --border: #27272a;
+  --ring: #ffffff;
+  --glow-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Custom scrollbars */
+/* 2. Theme: Minimal Light (Clean High-Contrast Daylight, Stark Charcoal on Pure Canvas) */
+[data-theme="sunlight-field"] {
+  --color-bg: 250 250 250;             /* #fafafa crisp daylight background */
+  --color-fg: 9 9 11;                  /* #09090b deep charcoal black text */
+  --color-card: 255 255 255;           /* #ffffff pure white card */
+  --color-card-fg: 9 9 11;             /* #09090b */
+  --color-primary: 9 9 11;             /* #09090b deep black button */
+  --color-primary-fg: 255 255 255;     /* #ffffff pure white text on button */
+  --color-secondary: 244 244 245;       /* #f4f4f5 subtle light panel */
+  --color-secondary-fg: 9 9 11;        /* #09090b */
+  --color-muted: 244 244 245;          /* #f4f4f5 */
+  --color-muted-fg: 113 113 122;       /* #71717a readable muted grey */
+  --color-accent: 228 228 231;         /* #e4e4e7 */
+  --color-accent-fg: 9 9 11;           /* #09090b deep charcoal */
+  --color-border: 228 228 231;         /* #e4e4e7 clean light border */
+
+  --background: #fafafa;
+  --foreground: #09090b;
+  --card: #ffffff;
+  --card-foreground: #09090b;
+  --primary: #09090b;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #09090b;
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  --accent: #e4e4e7;
+  --border: #e4e4e7;
+  --ring: #09090b;
+  --glow-color: rgba(0, 0, 0, 0.08);
+}
+
+/* 3. Theme: Emerald Agritech (Rich Botanical Forest Green & Clean Organic Mint) */
+[data-theme="emerald-agri"] {
+  --color-bg: 6 22 15;                 /* #06160f deep forest midnight */
+  --color-fg: 240 253 244;             /* #f0fdf4 crisp mint white */
+  --color-card: 13 36 26;              /* #0d241a botanical card panel */
+  --color-card-fg: 240 253 244;        /* #f0fdf4 */
+  --color-primary: 34 197 94;          /* #22c55e vibrant agri green button */
+  --color-primary-fg: 2 44 34;         /* #022c22 deep forest text */
+  --color-secondary: 20 49 37;         /* #143125 subtle moss green panel */
+  --color-secondary-fg: 220 252 231;   /* #dcfce7 */
+  --color-muted: 13 36 26;             /* #0d241a */
+  --color-muted-fg: 110 231 183;       /* #6ee7b7 mint text */
+  --color-accent: 234 179 8;           /* #eab308 mustard seed gold */
+  --color-accent-fg: 2 44 34;          /* #022c22 deep forest text */
+  --color-border: 26 64 49;            /* #1a4031 crisp organic border */
+
+  --background: #06160f;
+  --foreground: #f0fdf4;
+  --card: #0d241a;
+  --card-foreground: #f0fdf4;
+  --primary: #22c55e;
+  --primary-foreground: #022c22;
+  --secondary: #143125;
+  --secondary-foreground: #dcfce7;
+  --muted: #0d241a;
+  --muted-foreground: #6ee7b7;
+  --accent: #eab308;
+  --border: #1a4031;
+  --ring: #22c55e;
+  --glow-color: rgba(34, 197, 94, 0.25);
+}
+
+html, body {
+  background-color: rgb(var(--color-bg));
+  color: rgb(var(--color-fg));
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  transition: background-color 0.2s cubic-bezier(0.4, 0, 0.2, 1), color 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* Custom sleek scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--background);
+  background: rgb(var(--color-bg));
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgb(var(--color-border));
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--muted-foreground);
+  background: rgb(var(--color-muted-fg));
 }

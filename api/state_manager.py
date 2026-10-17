@@ -26,6 +26,7 @@ class StateManager:
         self.lots = [
             {
                 "lot_id": "LOT-8921",
+                "farmer_id": "FARMER-8921",
                 "farmer_name": "Suresh Kumar",
                 "phone": "+91 98123 45001",
                 "village": "Bhalaut",
@@ -39,6 +40,7 @@ class StateManager:
             },
             {
                 "lot_id": "LOT-8922",
+                "farmer_id": "FARMER-8922",
                 "farmer_name": "Dinesh Chillar",
                 "phone": "+91 98123 45002",
                 "village": "Kalanaur",
@@ -107,6 +109,7 @@ class StateManager:
 
         new_lot = {
             "lot_id": lot_id,
+            "farmer_id": f"FARMER-{lot_id}",
             "farmer_name": farmer_name,
             "phone": phone,
             "village": village,
