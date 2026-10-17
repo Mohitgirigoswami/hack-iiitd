@@ -146,33 +146,32 @@ export default function OmnichannelNotificationDrawer({ isOpen, onClose, activeP
           </div>
         </div>
 
-        {/* Telegram Linking & Test Ribbon */}
-        <div className="p-3.5 bg-secondary/80 border-b border-border space-y-2.5 text-xs">
+        {/* Telegram Verified Phone Linking & Test Ribbon */}
+        <div className="p-3.5 bg-secondary/80 border-b border-border space-y-3 text-xs">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold text-foreground flex items-center gap-1.5">
               <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
-              Telegram Account Link
+              Telegram Phone Verification
             </span>
             <span className="text-[10px] text-emerald-400 font-semibold flex items-center gap-1">
               <ShieldCheck className="w-3 h-3" /> Auto-Synced to Caller ID
             </span>
           </div>
 
-          <div className="flex gap-2">
-            <input 
-              type="text"
-              value={tgHandle}
-              onChange={(e) => setTgHandle(e.target.value)}
-              placeholder="@username"
-              className="flex-1 bg-card border border-border rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary font-mono"
-            />
-            <button
-              onClick={handleLinkTelegram}
-              disabled={linking}
-              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shrink-0"
+          <div className="p-2.5 rounded-xl bg-card border border-border flex items-center justify-between gap-2">
+            <div>
+              <span className="text-[9px] font-bold text-muted-fg uppercase tracking-wider block">Verified Caller CLI</span>
+              <span className="text-xs font-bold font-mono text-foreground">{activePhone}</span>
+            </div>
+            <a
+              href={`https://t.me/KhetOSSaathiBot?start=link_${encodeURIComponent(activePhone.replace(/\s+/g, ''))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-bold text-[11px] transition inline-flex items-center gap-1 shrink-0 shadow-sm"
             >
-              {linking ? 'Linking...' : linkSuccess ? 'Linked ✓' : 'Link Telegram'}
-            </button>
+              <Bot className="w-3.5 h-3.5" />
+              Open @KhetOSSaathiBot ↗
+            </a>
           </div>
 
           <div className="flex justify-between items-center pt-1 border-t border-border/40">

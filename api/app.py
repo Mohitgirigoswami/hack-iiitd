@@ -19,7 +19,7 @@ from core.database import (
     update_lot_status, delete_lot, get_backhaul_schedules, create_backhaul_schedule,
     get_notifications, add_activity, register_driver, register_buyer,
     verify_user_credentials, get_all_drivers, get_all_buyers,
-    get_stakeholders_directory, schedule_backhaul_date_db
+    get_stakeholders_directory, schedule_backhaul_date_db, get_connection
 )
 from core.notifications import send_dual_channel_alert, link_telegram, fetch_notifications
 from state_manager import state
@@ -847,25 +847,70 @@ def telegram_bot_command():
             reply = f"✅ लॉट #{lot_id} का पिकअप स्वीकार कर लिया गया है। बोलेरो पिकअप लॉक हो गया है।"
         else:
             reply = "⚠️ कोई लॉट नहीं मिला।"
-    elif cmd == "/reject":
-        user_lots = get_user_lots(phone)
-        lot_id = parts[1] if len(parts) > 1 else (user_lots[0]["lot_id"] if user_lots else None)
-        if lot_id:
-            update_lot_status(lot_id, "REJECTED_BY_FARMER")
-            reply = f"✅ लॉट #{lot_id} का पिकअप रद्द कर दिया गया है। ₹0 पेनाल्टी लागू है।"
-        else:
-            reply = "⚠️ कोई लॉट नहीं मिला।"
+    elif cmd in ["/verify", "/contact"]:
+        target_phone = parts[1] if len(parts) > 1 else phone
+        update_user_telegram(target_phone, "tg_verified_" + str(int(time.time())), "@" + farmer_name.lower().replace(" ", "_"))
+        reply = (
+            f"📱 *सत्यापन सफल (Phone Verified)* ✅\n\n"
+            f"• मोबाइल नंबर: `{target_phone}`\n"
+            f"• किसान: {farmer_name}\n"
+            f"• KhetPin: `{khet_pin}` ({village})\n\n"
+            f"अब आप सीधे इसी चैट से मंडी भाव (/mandi) और लॉट जोड़ सकते हैं (/addlot 4)।"
+        )
+    elif cmd in ["/location", "/pin", "/geosync"]:
+        try:
+            lat = float(parts[1]) if len(parts) > 1 else 28.8942
+            lng = float(parts[2]) if len(parts) > 2 else 76.6021
+        except Exception:
+            lat, lng = 28.8942, 76.6021
+        from core.khetpin import generate_khet_pin
+        new_pin = generate_khet_pin(lat, lng, state_code="HR", district_code="ROH")
+        khet_pin = new_pin["khet_pin"]
+        with get_connection() as conn:
+            conn.execute("UPDATE users SET khet_pin = ? WHERE phone = ?;", (khet_pin, phone))
+            conn.commit()
+        reply = (
+            f"📍 *खेत लोकेशन पिन अपडेट हो गई!*\n\n"
+            f"• नया KhetPin: `{khet_pin}`\n"
+            f"• GPS निर्देशांक: {lat:.4f}° N, {lng:.4f}° E\n"
+            f"• पक्की सड़क टर्नऑफ: {new_pin['snapped_turnoff']['paved_road_name']}\n"
+            f"• अनमैप्ड कच्चा रास्ता: ~{new_pin['snapped_turnoff']['unmapped_dirt_distance_meters']} मीटर"
+        )
     else:
         reply = f"अनजान कमांड `{command_text}`। उपलब्ध कमांड्स देखने के लिए `/help` लिखें।"
+
+    # Clean markdown formatting for natural neural Hindi speech
+    clean_speech_text = (
+        reply.replace("*", "")
+             .replace("•", "")
+             .replace("`", "")
+             .replace("━━━━━━━━━━━━━━━━━━", "")
+             .replace("\n\n", " ")
+    )
+    audio_bytes = generate_hindi_audio(clean_speech_text[:200])
+    audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
 
     return jsonify({
         "status": "SUCCESS",
         "command": command_text,
         "reply": reply,
+        "audio_base64": audio_b64,
         "farmer_name": farmer_name,
         "phone": phone
     })
 
+# --- Telegram Bot Background Long-Polling Daemon ---
+from adapters.telegram_bot import start_telegram_bot_daemon
+
 if __name__ == "__main__":
+    # Auto-launch daemon thread if enabled (default True)
+    if os.getenv("ENABLE_TELEGRAM_DAEMON", "1").strip().lower() in ["1", "true", "yes"]:
+        try:
+            start_telegram_bot_daemon()
+            print("[KhetOS] Background Telegram bot daemon thread successfully initialized.")
+        except Exception as e:
+            print(f"[Warning] Failed to start Telegram Bot daemon: {e}")
+
     print(f"[KhetOS] Central API Engine running on http://localhost:{PORT}")
     app.run(host="0.0.0.0", port=PORT, debug=False)
+

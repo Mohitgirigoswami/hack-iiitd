@@ -112,12 +112,13 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
   };
 
   const quickCommands = [
+    { label: '📱 Verify Phone Number', cmd: `/verify ${currentPhone}` },
+    { label: '📍 Drop Farm GPS Pin', cmd: '/location 28.8942 76.6021' },
     { label: '/mandi (भाव)', cmd: '/mandi' },
     { label: '/mystock (स्टॉक)', cmd: '/mystock' },
     { label: '/addlot 4 (नया लॉट)', cmd: '/addlot 4' },
     { label: '/modlot 1 5 (संशोधन)', cmd: '/modlot 1 5' },
     { label: '/dellot 1 (₹0 रद्द)', cmd: '/dellot 1' },
-    { label: '/accept 1 (स्वीकार)', cmd: '/accept 1' },
     { label: '/help (मदद)', cmd: '/help' },
   ];
 
@@ -142,13 +143,13 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
 
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-sm text-white">KhetOS Kisan Mitra Bot 🌾</h3>
+              <h3 className="font-bold text-sm text-white">KhetOS Saathi Bot 🌾</h3>
               <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-bold">
                 bot
               </span>
             </div>
             <p className="text-[11px] text-[#708499] flex items-center gap-1">
-              <span>@khetos_bot</span> &bull; 
+              <span>@KhetOSSaathiBot</span> &bull; 
               <ShieldCheck className="w-3 h-3 text-emerald-400" />
               <span className="text-emerald-400 font-mono text-[10px]">{currentPhone}</span>
             </p>

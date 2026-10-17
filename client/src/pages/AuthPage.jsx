@@ -177,11 +177,11 @@ export default function AuthPage({ initialTab = 'signin' }) {
       </div>
 
       {/* Main Container */}
-      <div className="bg-card border border-border rounded-3xl shadow-xl overflow-hidden">
+      <div className="bg-[#0c1020]/90 backdrop-blur-xl border border-white/[0.08] rounded-3xl shadow-2xl shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] overflow-hidden">
         {/* Header Banner */}
-        <div className="p-6 sm:p-8 bg-gradient-to-r from-card via-secondary/40 to-card border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="p-6 sm:p-8 bg-gradient-to-r from-[#0c1020] via-[#12182d]/60 to-[#0c1020] border-b border-white/[0.08] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-secondary border border-border flex items-center justify-center p-1.5 shadow-sm shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-[#12182d] border border-white/[0.08] flex items-center justify-center p-1.5 shadow-sm shrink-0">
               <KhetOSLogo size={36} />
             </div>
             <div>
@@ -209,12 +209,12 @@ export default function AuthPage({ initialTab = 'signin' }) {
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex border-b border-border bg-secondary/30 overflow-x-auto">
+        <div className="flex border-b border-white/[0.08] bg-[#080b18]/60 overflow-x-auto">
           <button
             onClick={() => setActiveTab('signin')}
             className={`py-3.5 px-5 text-xs font-bold transition flex items-center gap-2 whitespace-nowrap border-b-2 ${
               activeTab === 'signin'
-                ? 'border-primary text-primary bg-card'
+                ? 'border-primary text-primary bg-[#0c1020]'
                 : 'border-transparent text-muted-fg hover:text-foreground'
             }`}
           >
@@ -358,7 +358,7 @@ export default function AuthPage({ initialTab = 'signin' }) {
                 <button
                   type="button"
                   onClick={() => handleQuickCredential('+91 94160 88219', '1234', 'DRIVER')}
-                  className="p-3 bg-secondary/60 hover:bg-secondary border border-border hover:border-blue-500/40 rounded-xl text-left transition group"
+                  className="p-3.5 bg-[#12182d]/80 hover:bg-[#161f38] border border-white/[0.08] hover:border-blue-500/40 rounded-xl text-left transition group shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-xs group-hover:text-blue-400">Baljit Singh</span>
@@ -371,7 +371,7 @@ export default function AuthPage({ initialTab = 'signin' }) {
                 <button
                   type="button"
                   onClick={() => handleQuickCredential('+91 98111 22334', '1234', 'BUYER')}
-                  className="p-3 bg-secondary/60 hover:bg-secondary border border-border hover:border-amber-500/40 rounded-xl text-left transition group"
+                  className="p-3.5 bg-[#12182d]/80 hover:bg-[#161f38] border border-white/[0.08] hover:border-amber-500/40 rounded-xl text-left transition group shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-xs group-hover:text-amber-400">Shree Ram Mill</span>
@@ -384,7 +384,7 @@ export default function AuthPage({ initialTab = 'signin' }) {
                 <button
                   type="button"
                   onClick={() => handleQuickCredential('+91 11 2769 1100', '2026', 'ADMIN')}
-                  className="p-3 bg-secondary/60 hover:bg-secondary border border-border hover:border-indigo-500/40 rounded-xl text-left transition group"
+                  className="p-3.5 bg-[#12182d]/80 hover:bg-[#161f38] border border-white/[0.08] hover:border-indigo-500/40 rounded-xl text-left transition group shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-bold text-foreground text-xs group-hover:text-indigo-400">Dr. Vivek Swaminathan</span>

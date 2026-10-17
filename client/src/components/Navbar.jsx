@@ -49,12 +49,12 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-card/90 backdrop-blur-md border-b border-border transition-colors">
+      <header className="sticky top-0 z-40 bg-[#080A19]/85 backdrop-blur-xl border-b border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
           {/* Brand & Tagline */}
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2.5 group">
-              <div className="w-9 h-9 rounded-xl bg-card border border-border flex items-center justify-center p-0.5 shadow-sm group-hover:scale-105 transition">
+              <div className="w-9 h-9 rounded-xl bg-[#0d1224]/90 border border-white/[0.08] flex items-center justify-center p-0.5 shadow-sm group-hover:scale-105 transition">
                 <KhetOSLogo size={32} />
               </div>
               <div>
@@ -71,7 +71,7 @@ export default function Navbar() {
             </Link>
 
             {/* Live Corridor Status Pill */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-secondary/80 border border-border text-xs">
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-[#0d1224]/80 border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] text-xs">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
@@ -87,8 +87,8 @@ export default function Navbar() {
               to="/"
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                 location.pathname === '/'
-                  ? 'bg-secondary text-foreground'
-                  : 'text-muted-fg hover:text-foreground hover:bg-secondary/50'
+                  ? 'bg-[#12182d] text-foreground border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
+                  : 'text-muted-fg hover:text-foreground hover:bg-white/[0.04]'
               }`}
             >
               Portals
@@ -98,8 +98,8 @@ export default function Navbar() {
               to="/dashboard"
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition ${
                 location.pathname === '/dashboard'
-                  ? 'bg-secondary text-foreground'
-                  : 'text-muted-fg hover:text-foreground hover:bg-secondary/50'
+                  ? 'bg-[#12182d] text-foreground border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
+                  : 'text-muted-fg hover:text-foreground hover:bg-white/[0.04]'
               }`}
             >
               Dashboard
@@ -110,8 +110,8 @@ export default function Navbar() {
               to="/login"
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 ${
                 location.pathname === '/login' || location.pathname === '/register'
-                  ? 'bg-secondary text-foreground'
-                  : 'text-muted-fg hover:text-foreground hover:bg-secondary/50'
+                  ? 'bg-[#12182d] text-foreground border border-white/[0.08] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
+                  : 'text-muted-fg hover:text-foreground hover:bg-white/[0.04]'
               }`}
             >
               <KeyRound className="w-3.5 h-3.5 text-primary" />
@@ -125,7 +125,7 @@ export default function Navbar() {
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm ${
                 location.pathname === '/call'
                   ? 'bg-primary text-primary-foreground shadow-glow'
-                  : 'bg-secondary text-foreground border border-border hover:bg-primary hover:text-primary-foreground'
+                  : 'bg-[#12182d] text-foreground border border-white/[0.08] hover:bg-primary hover:text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]'
               }`}
             >
               <Phone className="w-3.5 h-3.5 animate-pulse" />
@@ -139,7 +139,7 @@ export default function Navbar() {
             <button
               onClick={() => setIsNotifOpen(true)}
               title="Dual-Channel Notifications (Phone IVR + Telegram)"
-              className="relative p-2 rounded-xl border border-border bg-card hover:bg-secondary text-foreground transition active:scale-95"
+              className="relative p-2 rounded-xl border border-white/[0.08] bg-[#0d1224]/80 hover:bg-[#12182d] text-foreground transition active:scale-95 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
             >
               <Bell className="w-4 h-4" />
               {notifCount > 0 && (
@@ -154,7 +154,7 @@ export default function Navbar() {
               onClick={handleReset}
               disabled={resetting}
               title="Reset active pool back to 73.3% baseline"
-              className="p-2 rounded-xl border border-border bg-card hover:bg-secondary text-muted-fg hover:text-foreground transition active:scale-95"
+              className="p-2 rounded-xl border border-white/[0.08] bg-[#0d1224]/80 hover:bg-[#12182d] text-muted-fg hover:text-foreground transition active:scale-95 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
             >
               <RefreshCw className={`w-4 h-4 ${resetting ? 'animate-spin text-foreground' : ''}`} />
             </button>

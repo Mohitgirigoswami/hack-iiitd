@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { RoleProvider } from './context/RoleContext';
 import Navbar from './components/Navbar';
+import TopLaserBar from './components/TopLaserBar';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import CallSimulator from './pages/CallSimulator';
@@ -15,7 +16,10 @@ export default function App() {
     <ThemeProvider>
       <RoleProvider>
         <BrowserRouter>
-          <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-200">
+          <div className="min-h-screen bg-background text-foreground flex flex-col font-sans transition-colors duration-200 relative">
+            {/* Viewport Top 3px Glowing Progress Laser Bar */}
+            <TopLaserBar />
+
             {/* Global Sticky Navigation */}
             <Navbar />
 
