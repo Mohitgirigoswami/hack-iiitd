@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Phone, PhoneOff, ArrowLeft, Volume2, CheckCircle2, Truck } from 'lucide-react';
+import { Phone, PhoneOff, ArrowLeft, Volume2, CheckCircle2 } from 'lucide-react';
 
 export default function CallSimulator({ onNavigate }) {
   const [callActive, setCallActive] = useState(false);
@@ -21,7 +21,7 @@ export default function CallSimulator({ onNavigate }) {
 
   const handleStartCall = () => {
     setCallActive(true);
-    setCallStatus('Call Connected &bull; 00:03');
+    setCallStatus('Connected');
     speakHindi("KhetOS में आपका स्वागत है। मंडी भाव जानने के लिए 1 दबाएं। गाड़ी पूलिंग में जुड़ने के लिए 2 दबाएं।");
   };
 
@@ -68,35 +68,34 @@ export default function CallSimulator({ onNavigate }) {
 
   return (
     <div className="max-w-md mx-auto space-y-4">
-      {/* Back button */}
       <button
         onClick={() => onNavigate('dashboard')}
-        className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Projector Dashboard
       </button>
 
       {/* Mobile Phone Mockup */}
-      <div className="bg-slate-800 rounded-3xl p-6 border-4 border-slate-700 shadow-2xl relative overflow-hidden">
+      <div className="bg-card rounded-3xl p-6 border-2 border-border shadow-2xl relative overflow-hidden transition-colors">
         {/* Speaker Notch */}
-        <div className="w-24 h-4 bg-slate-900 rounded-full mx-auto mb-4 flex items-center justify-center">
-          <div className="w-10 h-1.5 bg-slate-700 rounded-full"></div>
+        <div className="w-24 h-4 bg-secondary rounded-full mx-auto mb-4 flex items-center justify-center">
+          <div className="w-10 h-1.5 bg-border rounded-full"></div>
         </div>
 
         {/* In-Call Header Display */}
-        <div className="text-center py-4 bg-slate-900/80 rounded-2xl border border-slate-700/60 mb-5">
-          <p className="text-xs font-semibold text-emerald-400 uppercase tracking-widest">
+        <div className="text-center py-4 bg-secondary/80 rounded-2xl border border-border/60 mb-5">
+          <p className="text-xs font-semibold text-primary uppercase tracking-widest">
             {callActive ? '🟢 Live IVR Telephony Call' : 'Toll-Free Dialpad: 1800-KHET-OS'}
           </p>
-          <h3 className="text-xl font-bold text-white mt-1">KhetOS Rural Telephony Gateway</h3>
-          <p className="text-xs text-slate-400 mt-0.5">Caller ID: Ramu Sharma (+91 98123 45099)</p>
+          <h3 className="text-xl font-bold text-foreground mt-1">KhetOS Rural Telephony Gateway</h3>
+          <p className="text-xs text-muted-foreground mt-0.5">Caller ID: Ramu Sharma (+91 98123 45099)</p>
 
           {callActive && (
-            <div className="mt-3 p-3 bg-slate-800/90 mx-3 rounded-lg border border-slate-700 text-xs text-slate-200 flex items-start gap-2 text-left">
-              <Volume2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5 animate-pulse" />
+            <div className="mt-3 p-3 bg-card mx-3 rounded-lg border border-border text-xs text-foreground flex items-start gap-2 text-left shadow-sm">
+              <Volume2 className="w-4 h-4 text-primary shrink-0 mt-0.5 animate-pulse" />
               <div>
-                <span className="font-semibold text-emerald-400 block">System Speaking (Hindi):</span>
-                <p className="italic text-slate-300 mt-0.5">{spokenText || "Audio streaming..."}</p>
+                <span className="font-semibold text-primary block">System Speaking (Hindi):</span>
+                <p className="italic text-muted-foreground mt-0.5">{spokenText || "Audio streaming..."}</p>
               </div>
             </div>
           )}
@@ -104,8 +103,8 @@ export default function CallSimulator({ onNavigate }) {
 
         {/* Success Banner if Key 2 pressed */}
         {poolJoined && (
-          <div className="mb-4 p-3 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 flex items-center gap-2 animate-bounce">
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+          <div className="mb-4 p-3 bg-primary/20 border border-primary/40 rounded-xl text-xs text-primary flex items-center gap-2 animate-bounce">
+            <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
             <div>
               <span className="font-bold block">Bolero Pool 100% Full!</span>
               <span>Ramu's 4 quintals successfully loaded. Projector dashboard updated!</span>
@@ -135,12 +134,12 @@ export default function CallSimulator({ onNavigate }) {
               disabled={loading}
               className={`h-16 rounded-2xl flex flex-col items-center justify-center border transition-all active:scale-95 ${
                 key.num === '2' && callActive
-                  ? 'bg-emerald-600/30 border-emerald-400 text-emerald-300 hover:bg-emerald-600/50 animate-pulse'
-                  : 'bg-slate-700/60 hover:bg-slate-700 border-slate-600/80 text-white'
+                  ? 'bg-primary/20 border-primary text-primary hover:bg-primary/30 animate-pulse font-bold'
+                  : 'bg-secondary/70 hover:bg-secondary border-border text-foreground'
               }`}
             >
               <span className="text-xl font-bold leading-tight">{key.num}</span>
-              <span className="text-[9px] text-slate-400 font-medium leading-tight">{key.sub}</span>
+              <span className="text-[9px] text-muted-foreground font-medium leading-tight">{key.sub}</span>
             </button>
           ))}
         </div>
@@ -150,7 +149,7 @@ export default function CallSimulator({ onNavigate }) {
           {!callActive ? (
             <button
               onClick={handleStartCall}
-              className="flex items-center gap-2 px-8 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-full shadow-lg shadow-emerald-600/30 transition-all active:scale-95"
+              className="flex items-center gap-2 px-8 py-3.5 bg-primary hover:opacity-90 text-primary-foreground font-bold rounded-full shadow-glow transition-all active:scale-95"
             >
               <Phone className="w-5 h-5 fill-current" />
               Dial Call (कॉल करें)
@@ -158,7 +157,7 @@ export default function CallSimulator({ onNavigate }) {
           ) : (
             <button
               onClick={handleEndCall}
-              className="flex items-center gap-2 px-8 py-3.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-full shadow-lg shadow-rose-600/30 transition-all active:scale-95"
+              className="flex items-center gap-2 px-8 py-3.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-full shadow-lg transition-all active:scale-95"
             >
               <PhoneOff className="w-5 h-5" />
               End Call (काटें)

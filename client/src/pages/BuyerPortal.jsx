@@ -91,53 +91,53 @@ export default function BuyerPortal({ onNavigate }) {
     <div className="max-w-3xl mx-auto space-y-6">
       <button
         onClick={() => onNavigate('dashboard')}
-        className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition"
+        className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
       >
         <ArrowLeft className="w-4 h-4" /> Back to Projector Dashboard
       </button>
 
-      <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl space-y-6">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-700">
+      <div className="bg-card rounded-2xl p-6 border border-border shadow-xl space-y-6 transition-colors">
+        <div className="flex items-center justify-between pb-4 border-b border-border">
           <div>
-            <span className="text-xs font-bold text-amber-400 uppercase tracking-widest">
+            <span className="text-xs font-bold text-primary uppercase tracking-widest">
               🏢 Institutional Procurement Gateway (/buyer)
             </span>
-            <h2 className="text-2xl font-bold text-white mt-1">Wholesale Cluster Order & Escrow</h2>
-            <p className="text-xs text-slate-400">Direct farm-gate sourcing for modern flour mills & processors.</p>
+            <h2 className="text-2xl font-bold text-foreground mt-1">Wholesale Cluster Order & Escrow</h2>
+            <p className="text-xs text-muted-foreground">Direct farm-gate sourcing for modern flour mills & processors.</p>
           </div>
-          <Building2 className="w-8 h-8 text-amber-400" />
+          <Building2 className="w-8 h-8 text-primary" />
         </div>
 
         <form onSubmit={handleMatchOrder} className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-3">
-            <label className="text-xs font-semibold text-slate-400 block mb-1">Company / Mill Name:</label>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">Company / Mill Name:</label>
             <input
               type="text"
               value={buyerName}
               onChange={(e) => setBuyerName(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400"
+              className="w-full bg-secondary/80 border border-border rounded-lg px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary transition"
               required
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400 block mb-1">Required Quantity (Quintals):</label>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">Required Quantity (Quintals):</label>
             <input
               type="number"
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400 font-mono font-bold"
+              className="w-full bg-secondary/80 border border-border rounded-lg px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary font-mono font-bold transition"
               required
             />
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-slate-400 block mb-1">Offered Bid Price (₹/Quintal):</label>
+            <label className="text-xs font-semibold text-muted-foreground block mb-1">Offered Bid Price (₹/Quintal):</label>
             <input
               type="number"
               value={bidPrice}
               onChange={(e) => setBidPrice(Number(e.target.value))}
-              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-amber-400 font-mono font-bold"
+              className="w-full bg-secondary/80 border border-border rounded-lg px-3.5 py-2.5 text-sm text-foreground focus:outline-none focus:border-primary font-mono font-bold transition"
               required
             />
           </div>
@@ -146,7 +146,7 @@ export default function BuyerPortal({ onNavigate }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg shadow-lg transition active:scale-95 text-sm"
+              className="w-full py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-lg shadow-lg transition active:scale-95 text-sm"
             >
               {loading ? 'Matching...' : 'Run Hybrid Match ⚡'}
             </button>
@@ -155,30 +155,30 @@ export default function BuyerPortal({ onNavigate }) {
 
         {/* Order Match Details */}
         {orderResult && (
-          <div className="bg-slate-900/90 rounded-xl p-5 border border-slate-700 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-700/60">
-              <span className="text-xs text-emerald-400 font-bold uppercase tracking-wider">
+          <div className="bg-secondary/60 rounded-xl p-5 border border-border space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <span className="text-xs text-primary font-bold uppercase tracking-wider">
                 ✅ Hybrid Knapsack Allocation Completed
               </span>
-              <span className="text-xs text-slate-400">Order ID: {orderResult.order.order_id}</span>
+              <span className="text-xs text-muted-foreground">Order ID: {orderResult.order.order_id}</span>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-              <div className="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
-                <span className="text-slate-400 block">Requested Qty:</span>
-                <span className="font-bold text-white text-base">{quantity} Qtl</span>
+              <div className="bg-card p-2.5 rounded-lg border border-border">
+                <span className="text-muted-foreground block">Requested Qty:</span>
+                <span className="font-bold text-foreground text-base">{quantity} Qtl</span>
               </div>
-              <div className="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
-                <span className="text-slate-400 block">Fulfilled:</span>
-                <span className="font-bold text-emerald-400 text-base">{orderResult.order.quantity_fulfilled || quantity} Qtl</span>
+              <div className="bg-card p-2.5 rounded-lg border border-border">
+                <span className="text-muted-foreground block">Fulfilled:</span>
+                <span className="font-bold text-primary text-base">{orderResult.order.quantity_fulfilled || quantity} Qtl</span>
               </div>
-              <div className="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
-                <span className="text-slate-400 block">Gross Value:</span>
-                <span className="font-bold text-white text-base">₹{totalValue.toLocaleString()}</span>
+              <div className="bg-card p-2.5 rounded-lg border border-border">
+                <span className="text-muted-foreground block">Gross Value:</span>
+                <span className="font-bold text-foreground text-base">₹{totalValue.toLocaleString()}</span>
               </div>
-              <div className="bg-slate-800 p-2.5 rounded-lg border border-slate-700">
-                <span className="text-slate-400 block">20% Advance Escrow:</span>
-                <span className="font-bold text-amber-400 text-base">₹{escrowAmount.toLocaleString()}</span>
+              <div className="bg-card p-2.5 rounded-lg border border-border">
+                <span className="text-muted-foreground block">20% Advance Escrow:</span>
+                <span className="font-bold text-primary text-base">₹{escrowAmount.toLocaleString()}</span>
               </div>
             </div>
 
@@ -188,18 +188,18 @@ export default function BuyerPortal({ onNavigate }) {
                 <button
                   onClick={handlePayEscrow}
                   disabled={loading}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg transition active:scale-95 text-sm"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg transition active:scale-95 text-sm"
                 >
                   <CreditCard className="w-5 h-5" />
                   Deposit ₹{escrowAmount.toLocaleString()} Escrow via Razorpay
                 </button>
               ) : (
-                <div className="p-4 bg-emerald-500/20 border border-emerald-500/40 rounded-xl text-center space-y-1">
-                  <div className="flex items-center justify-center gap-2 text-emerald-400 font-bold text-sm">
+                <div className="p-4 bg-primary/20 border border-primary/40 rounded-xl text-center space-y-1">
+                  <div className="flex items-center justify-center gap-2 text-primary font-bold text-sm">
                     <ShieldCheck className="w-5 h-5" />
                     ₹{escrowAmount.toLocaleString()} Escrow Locked & Verified!
                   </div>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-xs text-muted-foreground">
                     Dispatch manifests generated. Final 80% settles upon APMC Mandi weighbridge slip receipt.
                   </p>
                 </div>
