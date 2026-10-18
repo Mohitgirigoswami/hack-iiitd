@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, Bot, User, Volume2, ShieldCheck, Sparkles, RefreshCw, 
-  CheckCircle2, XCircle, ChevronRight, CornerDownLeft, MessageSquare
+  CheckCircle2, XCircle, ChevronRight, CornerDownLeft, MessageSquare,
+  Camera, Image, Upload, X, Droplets
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext';
 
@@ -13,13 +14,15 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
     {
       id: 1,
       sender: 'bot',
-      text: `🌾 नमस्ते रामू जी!\nKhetOS (खेतOS) किसान सहायता बॉट में आपका स्वागत है।\n\n📍 आपका खेतपिन: HR-ROH-78G4 (Bhalaut)\n📱 फोन CLI: ${currentPhone} (स्वचालित प्रमाणित)\n\nआज़ादपुर मंडी भाव जानने के लिए /mandi दबाएं।\nस्टॉक देखने के लिए /mystock दबाएं।`,
+      text: `🌾 नमस्ते रामू जी!\nKhetOS (खेतOS) किसान सहायता बॉट में आपका स्वागत है।\n\n📍 आपका खेतपिन: HR-ROH-78G4 (Bhalaut)\n📱 फोन CLI: ${currentPhone} (स्वचालित प्रमाणित)\n\nआज़ादपुर मंडी भाव जानने के लिए /mandi दबाएं।\nस्टॉक देखने के लिए /mystock दबाएं।\nसिंचाई सलाह के लिए /tubewell दबाएं।\nपत्ती रोग जांच के लिए कैमरा आइकन 📷 दबाएं।`,
       timestamp: 'Just now'
     }
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
   const [playingAudioIdx, setPlayingAudioIdx] = useState(null);
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -111,13 +114,74 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
     }
   };
 
+  const handleSendPhoto = async (crop, disease, label, imagePreview) => {
+    setShowPhotoModal(false);
+    const userMsg = {
+      id: Date.now(),
+      sender: 'user',
+      text: `📸 [पत्ती फोटो]: ${label || crop}`,
+      imagePreview: imagePreview,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/telegram/bot/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: currentPhone,
+          text: `/photo ${crop.toLowerCase()}`,
+          crop: crop,
+          disease: disease
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const data = await res.json();
+
+      const botMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: data.reply || 'जांच पूरी हो गई है।',
+        audio_base64: data.audio_base64,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      console.error('Photo scan error:', err);
+      const errMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: '⚠️ फोटो स्कैन करने में त्रुटि हुई। कृपया पुनः प्रयास करें।',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCustomFileUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target.result;
+      handleSendPhoto('Mustard', 'White Rust', file.name, dataUrl);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const quickCommands = [
-    { label: '/mandi (भाव)', cmd: '/mandi' },
+    { label: '/tubewell (सिंचाई)', cmd: '/tubewell' },
+    { label: '/mandi (सरसों भाव)', cmd: '/mandi' },
+    { label: '/mandi gehun (गेहूँ)', cmd: '/mandi gehun' },
+    { label: '/mandi aloo (आलू)', cmd: '/mandi aloo' },
+    { label: '/addlot 10 बोरी गेहूँ', cmd: '/addlot 10 बोरी गेहूँ' },
     { label: '/mystock (स्टॉक)', cmd: '/mystock' },
-    { label: '/addlot 4 (नया लॉट)', cmd: '/addlot 4' },
-    { label: '/modlot 1 5 (संशोधन)', cmd: '/modlot 1 5' },
     { label: '/dellot 1 (₹0 रद्द)', cmd: '/dellot 1' },
-    { label: '/accept 1 (स्वीकार)', cmd: '/accept 1' },
     { label: '/help (मदद)', cmd: '/help' },
   ];
 
@@ -192,6 +256,11 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
                     : 'bg-[#2b5278] text-white border border-[#3b6a9b] rounded-tr-sm'
                 }`}
               >
+                {m.imagePreview && (
+                  <div className="mb-2 rounded-xl overflow-hidden border border-white/20 bg-black/40">
+                    <img src={m.imagePreview} alt="Leaf Scan" className="w-full h-32 object-cover" />
+                  </div>
+                )}
                 <div className="whitespace-pre-wrap font-sans text-[12px]">{m.text}</div>
 
                 {/* Voice synthesis button if audio available */}
@@ -244,14 +313,90 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
         ))}
       </div>
 
+      {/* ICAR Crop Leaf Disease Scanner Drawer */}
+      {showPhotoModal && (
+        <div className="p-3 bg-[#1e2c3a] border-t border-[#2b3d52] space-y-2 animate-fade-in text-xs">
+          <div className="flex items-center justify-between pb-1 border-b border-[#2b3d52]">
+            <span className="font-bold text-emerald-400 flex items-center gap-1.5 text-[11px]">
+              <Camera className="w-3.5 h-3.5" />
+              ICAR AI Leaf Disease Doctor (पत्ती रोग पहचान)
+            </span>
+            <button
+              onClick={() => setShowPhotoModal(false)}
+              className="p-1 rounded text-[#708499] hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <p className="text-[11px] text-[#8fa7be]">
+            रोगग्रस्त पत्ती का नमूना चुनें या कैमरे से तस्वीर अपलोड करें:
+          </p>
+
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              onClick={() => handleSendPhoto('Mustard', 'White Rust', 'सरसों सफेद रतुआ (White Rust)', 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=400&auto=format&fit=crop&q=80')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-emerald-500/50 rounded-xl text-left transition flex flex-col justify-between"
+            >
+              <span className="text-[11px] font-bold text-white block">🌿 सरसों पत्ती</span>
+              <span className="text-[9px] text-amber-400 mt-1">White Rust</span>
+            </button>
+
+            <button
+              onClick={() => handleSendPhoto('Wheat', 'Yellow Rust', 'गेहूँ पीला रतुआ (Yellow Rust)', 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400&auto=format&fit=crop&q=80')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-emerald-500/50 rounded-xl text-left transition flex flex-col justify-between"
+            >
+              <span className="text-[11px] font-bold text-white block">🌾 गेहूँ पत्ती</span>
+              <span className="text-[9px] text-yellow-400 mt-1">Yellow Rust</span>
+            </button>
+
+            <button
+              onClick={() => handleSendPhoto('Potato', 'Late Blight', 'आलू झुलसा रोग (Late Blight)', 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-emerald-500/50 rounded-xl text-left transition flex flex-col justify-between"
+            >
+              <span className="text-[11px] font-bold text-white block">🥔 आलू पत्ती</span>
+              <span className="text-[9px] text-rose-400 mt-1">Late Blight</span>
+            </button>
+          </div>
+
+          <div className="pt-1 flex items-center justify-between">
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleCustomFileUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full py-1.5 px-3 bg-[#2b415a] hover:bg-[#344f6d] border border-[#3d5a7d] text-[#64b5f6] rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
+            >
+              <Upload className="w-3.5 h-3.5" />
+              <span>अपने फोन/कैमरे से फोटो अपलोड करें</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input Message Bar */}
       <div className="p-2.5 bg-[#17212b] border-t border-[#0e1621] flex items-center gap-2">
+        <button
+          onClick={() => setShowPhotoModal(!showPhotoModal)}
+          title="पत्ती की फोटो भेजें (Crop Leaf Disease Scanner)"
+          className={`p-2 border rounded-xl transition cursor-pointer ${
+            showPhotoModal
+              ? 'bg-emerald-600 text-white border-emerald-500'
+              : 'bg-[#242f3d] hover:bg-[#2f3d4f] text-[#64b5f6] border-[#324357]'
+          }`}
+        >
+          <Camera className="w-4 h-4" />
+        </button>
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendCommand()}
-          placeholder="Type message or command (/mandi, /addlot 4)..."
+          placeholder="Type message or command (/tubewell, /mandi, /addlot)..."
           disabled={loading}
           className="flex-1 bg-[#242f3d] border border-[#324357] rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#708499] focus:outline-none focus:border-emerald-500 font-sans"
         />

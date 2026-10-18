@@ -312,11 +312,16 @@ def create_lot(phone, crop, quantity_quintals, channel="ivr_call", target_pool_i
         user = get_or_create_user(phone)
 
     lot_id = f"LOT-{int(time.time() * 1000) % 100000}"
+    quantity_quintals = max(0.5, round(float(quantity_quintals), 1))
     bags_count = int(round(quantity_quintals * 2))
-    shared_freight = quantity_quintals * 120
-    benchmark_price = 5420
-    local_price = 4700
-    extra_profit = ((quantity_quintals * benchmark_price) - shared_freight) - (quantity_quintals * local_price)
+    shared_freight = round(quantity_quintals * 120.0, 2)
+
+    # Dynamic crop benchmark lookup
+    from core.mandi_prices import get_mandi_price
+    p = get_mandi_price(crop)
+    benchmark_price = float(p.get("modal_price", 5420))
+    local_price = float(p.get("local_trader_price", 4700))
+    extra_profit = round(((quantity_quintals * benchmark_price) - shared_freight) - (quantity_quintals * local_price), 2)
     now = time.strftime("%Y-%m-%d %H:%M:%S")
 
     with get_connection() as conn:
@@ -335,7 +340,7 @@ def create_lot(phone, crop, quantity_quintals, channel="ivr_call", target_pool_i
         conn.commit()
 
     recalculate_active_pool()
-    add_activity("LOT_CREATED", f"{user['name']} declared {bags_count} bags ({quantity_quintals} Qtl) of {crop}. Extra profit: +₹{extra_profit:.0f}", event_type="farmer", channel=channel)
+    add_activity("LOT_CREATED", f"{user['name']} declared {bags_count} bags ({quantity_quintals:.1f} Qtl) of {crop}. Extra profit: +₹{extra_profit:.0f}", event_type="farmer", channel=channel)
     return get_lot_by_id(lot_id)
 
 def update_lot_quantity(lot_id, new_quantity_quintals):
@@ -344,8 +349,13 @@ def update_lot_quantity(lot_id, new_quantity_quintals):
         return None
     new_quantity_quintals = max(0.5, round(float(new_quantity_quintals), 1))
     bags_count = int(round(new_quantity_quintals * 2))
-    shared_freight = new_quantity_quintals * 120
-    extra_profit = ((new_quantity_quintals * 5420) - shared_freight) - (new_quantity_quintals * 4700)
+    shared_freight = round(new_quantity_quintals * 120.0, 2)
+
+    from core.mandi_prices import get_mandi_price
+    p = get_mandi_price(lot.get("crop", "Mustard"))
+    benchmark_price = float(p.get("modal_price", 5420))
+    local_price = float(p.get("local_trader_price", 4700))
+    extra_profit = round(((new_quantity_quintals * benchmark_price) - shared_freight) - (new_quantity_quintals * local_price), 2)
     now = time.strftime("%Y-%m-%d %H:%M:%S")
 
     with get_connection() as conn:
@@ -361,7 +371,7 @@ def update_lot_quantity(lot_id, new_quantity_quintals):
         conn.commit()
 
     recalculate_active_pool()
-    add_activity("LOT_QUANTITY_UPDATED", f"Lot #{lot_id} ({lot['farmer_name']}) stock updated to {bags_count} bags ({new_quantity_quintals} Qtl).", event_type="farmer")
+    add_activity("LOT_QUANTITY_UPDATED", f"Lot #{lot_id} ({lot['farmer_name']}) stock updated to {bags_count} bags ({new_quantity_quintals:.1f} Qtl).", event_type="farmer")
     return get_lot_by_id(lot_id)
 
 def update_lot_status(lot_id, new_status, inspection_passed=None):

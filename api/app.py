@@ -88,7 +88,7 @@ def call_session_init():
             f"नमस्ते {user['name']} जी, खेतOS में आपका स्वागत है। "
             f"आपके {user['village']} खेत से जुड़े हैं। "
             f"मंडी भाव के लिए 1 दबाएं। अपनी गाड़ी पूलिंग के लिए 2 दबाएं। "
-            f"अपने लॉट का स्टॉक बदलने के लिए 3 दबाएं।"
+            f"लॉट स्टॉक बदलने के लिए 3 दबाएं। आज ट्यूबवेल कितनी देर चलाना है जानने के लिए 4 दबाएं।"
         )
         audio_bytes = generate_hindi_audio(welcome_text)
         audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
@@ -187,28 +187,53 @@ def handle_call_keypad():
         farmer_name = user["name"]
         village = user["village"]
 
-    if digit == "2":
-        # Pool lot or confirm pickup
+    if digit in ["2", "21", "22", "23", "24"]:
+        # Multi-crop selection: 21: Mustard, 22: Wheat, 23: Paddy, 24: Potato, default 2: Mustard
+        crop_map = {
+            "21": ("Mustard", 4.0, 8),
+            "22": ("Wheat", 5.0, 10),
+            "23": ("Paddy", 6.0, 12),
+            "24": ("Potato", 4.0, 8),
+            "2":  ("Mustard", 4.0, 8)
+        }
+        chosen_crop, chosen_qty, chosen_bags = crop_map.get(digit, ("Mustard", 4.0, 8))
+
         lot = state.add_lot_from_farmer(
             farmer_name=farmer_name,
             phone=caller_phone,
             village=village,
-            crop="Mustard",
-            quantity_quintals=4.0,
+            crop=chosen_crop,
+            quantity_quintals=chosen_qty,
             khet_pin=user.get("khet_pin", "HR-ROH-91P2"),
             channel="ivr_call"
         )
-        hindi_reply = f"{farmer_name} जी, आपकी 4 क्विंटल सरसों गाड़ी में जुड़ गई है। महिंद्रा बोलेरो 100% भर चुकी है और आज़ादपुर मंडी के लिए रवाना हो रही है।"
+        hindi_reply = f"{farmer_name} जी, आपकी {chosen_bags} बोरी ({chosen_qty} क्विंटल {chosen_crop}) महिंद्रा बोलेरो पूल में जुड़ गई है। गाड़ी 100% फुल हो गई है और आज़ादपुर मंडी के लिए लॉक है।"
         audio_bytes = generate_hindi_audio(hindi_reply)
         audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
             "status": "POOL_JOINED_SUCCESS",
-            "digit": "2",
-            "message": "Lot added to Bolero pool!",
+            "digit": digit,
+            "crop": chosen_crop,
+            "bags_count": chosen_bags,
+            "message": f"{chosen_bags} bags ({chosen_qty} Qtl) of {chosen_crop} added to Bolero pool!",
             "voice_prompt_hi": hindi_reply,
             "audio_base64": audio_b64,
             "lot": lot,
             "current_pool": state.active_pool
+        })
+    elif digit == "4":
+        # Key 4: Smart Tubewell & Irrigation Advisor
+        from core.tubewell import calculate_tubewell_advisory
+        res = calculate_tubewell_advisory(crop="Mustard", village=village, acres=1.0)
+        hindi_reply = res["voice_text_hi"]
+        return jsonify({
+            "status": "TUBEWELL_ADVISORY",
+            "digit": "4",
+            "hours_recommended": res["hours_recommended"],
+            "decision": res["decision"],
+            "voice_prompt_hi": hindi_reply,
+            "audio_base64": res["audio_base64"],
+            "advisory": res
         })
     elif digit == "1":
         price = get_mandi_price("Mustard")
@@ -226,7 +251,7 @@ def handle_call_keypad():
         # Stock management menu via keypad
         user_lots = get_user_lots(caller_phone)
         total_qtl = sum(l["quantity_quintals"] for l in user_lots)
-        hindi_reply = f"{farmer_name} जी, आपके खाते में कुल {len(user_lots)} लॉट ({total_qtl} क्विंटल) दर्ज हैं। स्टॉक 1 क्विंटल बढ़ाने के लिए 31 दबाएं। 1 क्विंटल घटाने के लिए 32 दबाएं। लॉट हटाने के लिए 33 दबाएं।"
+        hindi_reply = f"{farmer_name} जी, आपके खाते में कुल {len(user_lots)} लॉट ({total_qtl:.1f} क्विंटल) दर्ज हैं। स्टॉक 1 क्विंटल बढ़ाने के लिए 31 दबाएं। 1 क्विंटल घटाने के लिए 32 दबाएं। लॉट हटाने के लिए 33 दबाएं।"
         audio_bytes = generate_hindi_audio(hindi_reply)
         audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
@@ -242,11 +267,11 @@ def handle_call_keypad():
         if user_lots:
             target_lot = user_lots[0]
             updated = update_lot_quantity(target_lot["lot_id"], target_lot["quantity_quintals"] + 1.0)
-            hindi_reply = f"{farmer_name} जी, आपका लॉट 1 क्विंटल बढ़ा दिया गया है। कुल {updated['quantity_quintals']} क्विंटल ({updated['bags_count']} बोरी) दर्ज हो गया है।"
+            hindi_reply = f"{farmer_name} जी, आपका लॉट 1 क्विंटल बढ़ा दिया गया है। कुल {updated['quantity_quintals']:.1f} क्विंटल ({updated['bags_count']} बोरी) दर्ज हो गया है।"
             send_dual_channel_alert(
                 phone=caller_phone,
                 title="Stock Increased (+1 Qtl) 📦",
-                message=f"Phone Call IVR Key 31: Lot #{target_lot['lot_id']} updated to {updated['quantity_quintals']} Qtl ({updated['bags_count']} bags).",
+                message=f"Phone Call IVR Key 31: Lot #{target_lot['lot_id']} updated to {updated['quantity_quintals']:.1f} Qtl ({updated['bags_count']} bags).",
                 hindi_voice_text=hindi_reply
             )
         else:
@@ -269,11 +294,11 @@ def handle_call_keypad():
             target_lot = user_lots[0]
             new_qty = max(1.0, target_lot["quantity_quintals"] - 1.0)
             updated = update_lot_quantity(target_lot["lot_id"], new_qty)
-            hindi_reply = f"{farmer_name} जी, आपका लॉट 1 क्विंटल घटा दिया गया है। अब कुल {updated['quantity_quintals']} क्विंटल दर्ज है।"
+            hindi_reply = f"{farmer_name} जी, आपका लॉट 1 क्विंटल घटा दिया गया है। अब कुल {updated['quantity_quintals']:.1f} क्विंटल दर्ज है।"
             send_dual_channel_alert(
                 phone=caller_phone,
                 title="Stock Decreased (-1 Qtl) 📦",
-                message=f"Phone Call IVR Key 32: Lot #{target_lot['lot_id']} reduced to {updated['quantity_quintals']} Qtl ({updated['bags_count']} bags).",
+                message=f"Phone Call IVR Key 32: Lot #{target_lot['lot_id']} reduced to {updated['quantity_quintals']:.1f} Qtl ({updated['bags_count']} bags).",
                 hindi_voice_text=hindi_reply
             )
         else:
@@ -312,7 +337,7 @@ def handle_call_keypad():
             "audio_base64": audio_b64
         })
     else:
-        hindi_reply = "कृपया सही बटन दबाएं। मंडी भाव के लिए 1, गाड़ी पूलिंग के लिए 2, स्टॉक बदलने के लिए 3।"
+        hindi_reply = "कृपया सही बटन दबाएं। मंडी भाव के लिए 1, गाड़ी पूलिंग के लिए 2, स्टॉक बदलने के लिए 3, ट्यूबवेल सलाह के लिए 4।"
         audio_bytes = generate_hindi_audio(hindi_reply)
         audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
@@ -525,11 +550,47 @@ def scan_crop_disease():
         "audio_base64": audio_b64
     })
 
+# --- Smart Tubewell & Irrigation Advisory Route ---
+
+@app.route("/api/advisory/tubewell", methods=["GET", "POST"])
+def get_tubewell_advisory_route():
+    data = request.get_json(silent=True) or {}
+    crop = request.args.get("crop") or data.get("crop", "Mustard")
+    village = request.args.get("village") or data.get("village", "Bhalaut")
+    acres = float(request.args.get("acres") or data.get("acres", 1.0))
+    soil = request.args.get("soil") or data.get("soil", "loam")
+
+    from core.tubewell import calculate_tubewell_advisory
+    result = calculate_tubewell_advisory(crop=crop, village=village, acres=acres, soil_type=soil)
+    return jsonify(result)
+
 @app.route("/api/driver/inspect", methods=["POST"])
 def driver_inspect_lot():
     data = request.get_json(silent=True) or {}
     lot_id = data.get("lot_id")
     action = data.get("action", "APPROVE")
+    checklist = data.get("checklist")
+
+    current_lot = get_lot_by_id(lot_id)
+    if not current_lot:
+        return jsonify({"error": "LOT_NOT_FOUND"}), 404
+
+    # Terminal state lock: once lot is loaded or deferred, reject arbitrary modifications
+    if current_lot["status"] in ["LOADED_ON_TRUCK", "DEFERRED_FOR_SUN_DRYING"]:
+        if current_lot["status"] == "LOADED_ON_TRUCK" and action == "APPROVE":
+            return jsonify({"status": "SUCCESS", "lot": current_lot, "message": "Lot already verified and loaded."})
+        return jsonify({
+            "error": "LOT_ALREADY_FINALIZED",
+            "message": f"Lot #{lot_id} is already finalized with status '{current_lot['status']}'. State is locked."
+        }), 409
+
+    # Strict quality gate: if checklist provided for APPROVE, all 3 items must pass
+    if action == "APPROVE" and checklist is not None:
+        if not (checklist.get("stitched") and checklist.get("visual") and checklist.get("dryness")):
+            return jsonify({
+                "error": "CHECKLIST_INCOMPLETE",
+                "message": "All 3 quality gate criteria (bag stitching, seed cleanliness, grain dryness) must pass before loading."
+            }), 400
 
     if action == "APPROVE":
         updated = update_lot_status(lot_id, "LOADED_ON_TRUCK", inspection_passed=True)
@@ -781,52 +842,139 @@ def telegram_bot_command():
     # Command Router
     parts = command_text.split()
     cmd = parts[0].lower() if parts else "/help"
+    spoken_text = None
 
     if cmd in ["/start", "/help"]:
+        spoken_text = f"नमस्ते {farmer_name} जी, खेतOS में आपका स्वागत है।"
         reply = (
             f"🌾 नमस्ते {farmer_name} जी!\n"
             f"KhetOS (खेतOS) किसान सहायता बॉट में आपका स्वागत है।\n\n"
             f"📍 आपका खेतपिन: `{khet_pin}` ({village})\n"
             f"📱 फोन CLI: `{phone}` (स्वचालित प्रमाणित)\n\n"
-            f"उपलब्ध कमांड्स:\n"
-            f"• `/mandi` - आज का मंडी भाव (आज़ादपुर vs स्थानीय)\n"
-            f"• `/mystock` - आपके सक्रिय लॉट और बोरी विवरण\n"
-            f"• `/addlot [मात्रा]` - नया लॉट जोड़ें (उदा. `/addlot 4`)\n"
+            f"💡 उपलब्ध कमांड्स:\n"
+            f"• `/tubewell` - आज ट्यूबवेल कितनी देर चलाना है (सिंचाई सलाह)\n"
+            f"• `/mandi [फसल]` - आज़ादपुर मंडी भाव (उदा. `/mandi wheat`)\n"
+            f"• `/mystock` - आपके पंजीकृत लॉट व बोरियां\n"
+            f"• `/addlot [बोरी/क्विंटल] [फसल]` - बोलेरो पूल में जोड़ें (उदा. `/addlot 10 बोरी गेहूँ`)\n"
             f"• `/modlot [lot_id] [मात्रा]` - स्टॉक अपडेट करें\n"
             f"• `/dellot [lot_id]` - लॉट हटाएं (₹0 पेनाल्टी)\n"
+            f"• `/photo` - पत्ती रोग जांच रिपोर्ट व ICAR जेनेरिक साल्ट\n"
             f"• `/accept [lot_id]` - पिकअप स्वीकार करें\n"
             f"• `/reject [lot_id]` - पिकअप रद्द करें"
         )
-    elif cmd == "/mandi":
-        p = get_mandi_price("Mustard")
+    elif cmd in ["/tubewell", "/irrigation", "/water", "ट्यूबवेल", "सिंचाई"]:
+        crop_arg = parts[1] if len(parts) > 1 else "Mustard"
+        from core.tubewell import calculate_tubewell_advisory
+        res = calculate_tubewell_advisory(crop=crop_arg, village=village, acres=1.0)
+        spoken_text = res.get("voice_text_hi") or res["headline_hi"]
         reply = (
-            f"📈 आज़ादपुर APMC मंडी भाव:\n"
-            f"• फसल: सरसों (Mustard)\n"
-            f"• मॉडल भाव: ₹{p['modal_price']} / क्विंटल\n"
-            f"• भाव सीमा: ₹{p['min_price']} - ₹{p['max_price']}\n"
-            f"• स्थानीय आढ़ती भाव: ₹4,700\n"
-            f"✅ खेतOS पूलिंग से सीधा लाभ: +₹{p['modal_price'] - 4700}/क्विंटल"
+            f"🚿 *स्मार्ट ट्यूबवेल व सिंचाई परामर्श*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🌾 *फसल:* {res['crop_hindi']}\n"
+            f"⏱️ *सुझाव:* *{res['headline_hi']}*\n"
+            f"💡 *कारण:* {res['reason_hi']}\n\n"
+            f"⚡ *कृषि 3-फेज बिजली:* {res['power_roster']['active_slot']}\n"
+            f"🌱 *बचत:* ~{res['groundwater_saved_liters']:,} लीटर भूजल व {res['electricity_units_saved_kwh']} यूनिट बिजली की बचत!"
+        )
+    elif cmd == "/mandi":
+        crop_arg = parts[1] if len(parts) > 1 else "Mustard"
+        norm_crop = "Mustard"
+        ca = crop_arg.lower()
+        if "wheat" in ca or "कनक" in ca or "गेहूं" in ca: norm_crop = "Wheat"
+        elif "potato" in ca or "आलू" in ca or "aloo" in ca: norm_crop = "Potato"
+        elif "paddy" in ca or "धान" in ca: norm_crop = "Paddy"
+        elif "gram" in ca or "चना" in ca: norm_crop = "Gram"
+
+        p = get_mandi_price(norm_crop)
+        diff = p['modal_price'] - p.get('local_trader_price', 4700)
+        spoken_text = f"आज आज़ादपुर मंडी में {norm_crop} का भाव ₹{p['modal_price']} प्रति क्विंटल है। गांव के आढ़ती से ₹{diff} ज्यादा मिल रहे हैं।"
+        reply = (
+            f"📈 *आज़ादपुर APMC मंडी ({p.get('mandi', 'Azadpur')}) भाव:*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🌾 *फसल:* {p.get('commodity_hi', norm_crop)} ({norm_crop})\n"
+            f"💰 *मॉडल भाव:* ₹{p['modal_price']} / क्विंटल\n"
+            f"📊 *भाव सीमा:* ₹{p.get('min_price', p['modal_price'] - 150)} - ₹{p.get('max_price', p['modal_price'] + 150)}\n"
+            f"📉 *स्थानीय आढ़ती भाव:* ₹{p.get('local_trader_price', 4700)}\n"
+            f"✅ *खेतOS पूलिंग से सीधा लाभ:* +₹{diff}/क्विंटल"
         )
     elif cmd == "/mystock":
         lots = get_user_lots(phone)
         if not lots:
-            reply = f"ℹ️ {farmer_name} जी, आपके खाते में अभी कोई सक्रिय लॉट नहीं है। नया लॉट जोड़ने के लिए `/addlot 4` लिखें।"
+            reply = f"ℹ️ {farmer_name} जी, आपके खाते में अभी कोई सक्रिय लॉट नहीं है। नया लॉट जोड़ने के लिए `/addlot 10 बोरी गेहूँ` लिखें।"
         else:
-            lines = [f"📦 आपके सक्रिय लॉट ({len(lots)}):"]
+            lines = [f"📦 *आपके सक्रिय लॉट ({len(lots)}):*", "━━━━━━━━━━━━━━━━━━"]
             for l in lots:
-                lines.append(f"• #{l['lot_id']}: {l['crop']} - {l['quantity_quintals']} Qtl ({l['bags_count']} बोरी) | स्थिति: {l['status']}")
+                lines.append(f"• *#{l['lot_id']}*: {l['crop']} — {l['quantity_quintals']:.1f} Qtl ({l['bags_count']} बोरी) | स्थिति: `{l['status']}`")
             reply = "\n".join(lines)
     elif cmd == "/addlot":
-        qty = float(parts[1]) if len(parts) > 1 else 4.0
-        crop = parts[2] if len(parts) > 2 else "Mustard"
+        # Smart unit & crop parsing: supports `/addlot 10 bori wheat` or `/addlot 4 Mustard`
+        msg_raw = command_text.lower()
+        crop = "Mustard"
+        if "wheat" in msg_raw or "गेहूं" in msg_raw or "कनक" in msg_raw: crop = "Wheat"
+        elif "potato" in msg_raw or "आलू" in msg_raw or "aloo" in msg_raw: crop = "Potato"
+        elif "paddy" in msg_raw or "धान" in msg_raw: crop = "Paddy"
+        elif "gram" in msg_raw or "चना" in msg_raw: crop = "Gram"
+
+        # Check for numeric amount
+        raw_num = 4.0
+        for p in parts[1:]:
+            clean_p = p.replace("bori", "").replace("बोरी", "").replace("bags", "").replace("qtl", "").strip()
+            try:
+                raw_num = float(clean_p)
+                break
+            except ValueError:
+                continue
+
+        # Convert bags to quintals if specified
+        if any(unit in msg_raw for unit in ["bori", "बोरी", "bag", "कट्टे", "katte"]):
+            qty = max(0.5, round(raw_num * 0.5, 1))
+            bags = int(raw_num)
+        else:
+            qty = max(0.5, round(raw_num, 1))
+            bags = int(round(qty * 2))
+
         lot = create_lot(phone, crop, qty, channel="telegram_bot")
-        reply = f"✅ बधाई! लॉट #{lot['lot_id']} ({qty} क्विंटल {crop}) दर्ज हो गया है। 50kg की {lot['bags_count']} बोरियां बोलेरो पूल में शामिल हैं।"
+        reply = (
+            f"✅ *बधाई! आपकी फसल पूलिंग में दर्ज हो गई है!*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"📦 लॉट #{lot['lot_id']}\n"
+            f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
+            f"🚚 *गाड़ी:* Mahindra Bolero Maxi Truck\n"
+            f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)"
+        )
+    elif cmd in ["/photo", "/scan", "/disease"]:
+        raw_target = (parts[1] if len(parts) > 1 else data.get("crop", "Mustard")).strip().lower()
+        if "wheat" in raw_target or "गेहूं" in raw_target or "कनक" in raw_target:
+            crop_hint = "Wheat"
+            disease = data.get("disease") or "Yellow Rust"
+        elif "potato" in raw_target or "आलू" in raw_target:
+            crop_hint = "Potato"
+            disease = data.get("disease") or "Late Blight"
+        elif "paddy" in raw_target or "धान" in raw_target:
+            crop_hint = "Paddy"
+            disease = data.get("disease") or "Blast"
+        else:
+            crop_hint = "Mustard"
+            disease = data.get("disease") or "White Rust"
+
+        from core.advisory import get_prescription
+        presc = get_prescription(crop=crop_hint, disease=disease)
+        reply = (
+            f"📸 *फसल पत्ती रोग जांच रिपोर्ट (ICAR AI Doctor)*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🌾 *फसल:* {crop_hint}\n"
+            f"🦠 *पहचानी गई बीमारी:* {presc['disease_name']}\n"
+            f"🧪 *असली जेनेरिक साल्ट:* `{presc['chemical_salt']}`\n"
+            f"⚖️ *मात्रा व नाप:* {presc['dosage_hi']}\n"
+            f"💰 *अनुमानित खर्च:* {presc.get('estimated_price', '₹180 - ₹240')} (80% बचत)\n\n"
+            f"⚠️ *चेतावनी:* {presc['warning_hi']}"
+        )
     elif cmd == "/modlot":
         if len(parts) >= 3:
             lot_id = parts[1]
             qty = float(parts[2])
             updated = update_lot_quantity(lot_id, qty)
-            reply = f"✅ लॉट #{lot_id} अपडेट हो गया: अब {updated['quantity_quintals']} क्विंटल ({updated['bags_count']} बोरी) दर्ज है।"
+            reply = f"✅ लॉट #{lot_id} अपडेट हो गया: अब {updated['quantity_quintals']:.1f} क्विंटल ({updated['bags_count']} बोरी) दर्ज है।"
         else:
             reply = "⚠️ कृपया सही प्रारूप लिखें: `/modlot [lot_id] [नया_क्विंटल]`"
     elif cmd == "/dellot":
@@ -855,7 +1003,7 @@ def telegram_bot_command():
             f"• मोबाइल नंबर: `{target_phone}`\n"
             f"• किसान: {farmer_name}\n"
             f"• KhetPin: `{khet_pin}` ({village})\n\n"
-            f"अब आप सीधे इसी चैट से मंडी भाव (/mandi) और लॉट जोड़ सकते हैं (/addlot 4)।"
+            f"अब आप सीधे इसी चैट से मंडी भाव (/mandi) और लॉट जोड़ सकते हैं (/addlot 10 बोरी गेहूँ)।"
         )
     elif cmd in ["/location", "/pin", "/geosync"]:
         try:
@@ -880,14 +1028,19 @@ def telegram_bot_command():
         reply = f"अनजान कमांड `{command_text}`। उपलब्ध कमांड्स देखने के लिए `/help` लिखें।"
 
     # Clean markdown formatting for natural neural Hindi speech
-    clean_speech_text = (
-        reply.replace("*", "")
-             .replace("•", "")
-             .replace("`", "")
-             .replace("━━━━━━━━━━━━━━━━━━", "")
-             .replace("\n\n", " ")
-    )
-    audio_bytes = generate_hindi_audio(clean_speech_text[:200])
+    if not spoken_text:
+        clean_speech_text = (
+            reply.replace("*", "")
+                 .replace("•", "")
+                 .replace("`", "")
+                 .replace("━━━━━━━━━━━━━━━━━━", "")
+                 .replace("\n\n", " ")
+        )
+        import re
+        clean_speech_text = re.sub(r'[\U00010000-\U0010ffff]', '', clean_speech_text)
+        spoken_text = clean_speech_text[:120].strip()
+
+    audio_bytes = generate_hindi_audio(spoken_text)
     audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
 
     return jsonify({

@@ -117,58 +117,92 @@ def init_telegram_bot(token=None):
             f"📍 *खेतपिन:* `{khet_pin}` ({village})\n"
             f"📱 *मोबाइल CLI:* `{phone}`\n\n"
             f"💡 *उपलब्ध कमांड्स:*\n"
-            f"• `/mandi` — आज का आज़ादपुर APMC मंडी भाव\n"
+            f"• `/tubewell` — आज ट्यूबवेल कितनी देर चलाना है (सिंचाई सलाह)\n"
+            f"• `/mandi [फसल]` — आज़ादपुर मंडी भाव (उदा. `/mandi wheat`)\n"
             f"• `/mystock` — आपके पंजीकृत लॉट व बोरियां\n"
-            f"• `/addlot 4` — 4 क्विंटल (8 बोरी) बोलेरो पूल में जोड़ें\n"
+            f"• `/addlot [बोरी/क्विंटल] [फसल]` — पूलिंग में जोड़ें (उदा. `/addlot 10 बोरी गेहूँ`)\n"
             f"• `/modlot [lot_id] [qty]` — लॉट मात्रा बदलें\n"
             f"• `/dellot [lot_id]` — लॉट हटाएं (₹0 पेनाल्टी)\n"
             f"• `/accept [lot_id]` — पिकअप कन्फर्म करें\n"
             f"• `/reject [lot_id]` — पिकअप टालें\n\n"
+            f"📸 *पत्ती की फोटो भेजें:* AI डॉक्टर तुरंत रोग और 80% सस्ता ICAR जेनेरिक साल्ट बताएगा!\n"
             f"📍 *लोकेशन भेजने के लिए नीचे बटन दबाएं:* आपका Khet-PIN तुरंत अपडेट होगा!"
         )
 
         markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
         btn_loc = telebot.types.KeyboardButton("📍 अपनी लोकेशन भेजें (Khet-PIN अपडेट)", request_location=True)
-        btn_contact = telebot.types.KeyboardButton("📱 मोबाइल नंबर साझा करें", request_contact=True)
+        btn_tubewell = telebot.types.KeyboardButton("🚿 ट्यूबवेल कितनी देर चलाएं?")
         btn_mandi = telebot.types.KeyboardButton("/mandi")
         btn_stock = telebot.types.KeyboardButton("/mystock")
-        btn_add = telebot.types.KeyboardButton("/addlot 4")
+        btn_add = telebot.types.KeyboardButton("🌾 फसल जोड़ें (/addlot 10 बोरी गेहूँ)")
         btn_help = telebot.types.KeyboardButton("/help")
 
         markup.row(btn_loc)
-        markup.row(btn_contact)
-        markup.row(btn_mandi, btn_stock)
-        markup.row(btn_add, btn_help)
+        markup.row(btn_tubewell, btn_mandi)
+        markup.row(btn_stock, btn_add)
+        markup.row(btn_help)
 
         bot.reply_to(message, welcome_text, parse_mode="Markdown", reply_markup=markup)
 
-        spoken_text = f"नमस्ते {farmer_name} जी! खेतOS किसान साथी में आपका स्वागत है। आज़ादपुर मंडी भाव जानने के लिए स्लेश मंडी भेजें, या गाड़ी पूलिंग के लिए स्लेश ऐड लॉट 4 लिखें।"
+        spoken_text = f"नमस्ते {farmer_name} जी! खेतOS किसान साथी में आपका स्वागत है। ट्यूबवेल सिंचाई सलाह के लिए स्लेश ट्यूबवेल भेजें, या मंडी भाव के लिए स्लेश मंडी लिखें।"
         dispatch_voice_safe(bot, message.chat.id, spoken_text)
 
-    # 2. /mandi command handler (Real-time Azadpur APMC prices)
+    # 2. /tubewell command handler (Smart Tubewell & Irrigation Advisor)
+    @bot.message_handler(commands=['tubewell', 'irrigation', 'water'])
+    def handle_tubewell_advisory_bot(message):
+        user = resolve_farmer(message)
+        village = user.get("village", "Bhalaut")
+        parts = message.text.split()
+        crop_arg = parts[1] if len(parts) > 1 else "Mustard"
+
+        from core.tubewell import calculate_tubewell_advisory
+        res = calculate_tubewell_advisory(crop=crop_arg, village=village, acres=1.0)
+
+        reply_text = (
+            f"🚿 *स्मार्ट ट्यूबवेल व सिंचाई परामर्श*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🌾 *फसल:* {res['crop_hindi']}\n"
+            f"⏱️ *सुझाव:* *{res['headline_hi']}*\n"
+            f"💡 *कारण:* {res['reason_hi']}\n\n"
+            f"⚡ *कृषि 3-फेज बिजली:* {res['power_roster']['active_slot']}\n"
+            f"🌱 *बचत:* ~{res['groundwater_saved_liters']:,} लीटर भूजल व {res['electricity_units_saved_kwh']} यूनिट बिजली की बचत!"
+        )
+        bot.reply_to(message, reply_text, parse_mode="Markdown")
+        dispatch_voice_safe(bot, message.chat.id, res["voice_text_hi"])
+
+    # 3. /mandi command handler (Real-time Azadpur APMC prices for multiple crops)
     @bot.message_handler(commands=['mandi'])
     def handle_mandi_prices(message):
-        p = get_mandi_price("Mustard")
+        parts = message.text.split()
+        crop_arg = parts[1] if len(parts) > 1 else "Mustard"
+        norm_crop = "Mustard"
+        ca = crop_arg.lower()
+        if "wheat" in ca or "कनक" in ca or "गेहूं" in ca: norm_crop = "Wheat"
+        elif "potato" in ca or "आलू" in ca or "aloo" in ca: norm_crop = "Potato"
+        elif "paddy" in ca or "धान" in ca: norm_crop = "Paddy"
+        elif "gram" in ca or "चना" in ca: norm_crop = "Gram"
+
+        p = get_mandi_price(norm_crop)
         diff = p['modal_price'] - p.get('local_trader_price', 4700)
         pct = round((diff / p.get('local_trader_price', 4700)) * 100, 1)
 
         reply_text = (
-            f"📈 *आज का आज़ादपुर APMC मंडी भाव*\n"
+            f"📈 *आज का {p.get('mandi', 'आज़ादपुर APMC मंडी')} भाव*\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"🌾 *फसल:* सरसों (Mustard)\n"
+            f"🌾 *फसल:* {p.get('commodity_hi', norm_crop)} ({norm_crop})\n"
             f"📍 *मंडी:* {p.get('mandi', 'Azadpur APMC Mandi, Delhi')}\n"
             f"💰 *मॉडल भाव:* ₹{p['modal_price']} / क्विंटल\n"
-            f"📊 *भाव सीमा:* ₹{p['min_price']} – ₹{p['max_price']}\n"
-            f"📉 *स्थानीय गांव आढ़ती भाव:* ₹{p['local_trader_price']} / क्विंटल\n\n"
+            f"📊 *भाव सीमा:* ₹{p.get('min_price', p['modal_price'] - 150)} – ₹{p.get('max_price', p['modal_price'] + 150)}\n"
+            f"📉 *स्थानीय गांव आढ़ती भाव:* ₹{p.get('local_trader_price', 4700)} / क्विंटल\n\n"
             f"✅ *खेतOS पूलिंग से सीधा लाभ:* +₹{diff} / क्विंटल (+{pct}%)\n"
-            f"🚚 *गाड़ी पूलिंग में जुड़ने के लिए:* `/addlot 4` लिखकर भेजें।"
+            f"🚚 *गाड़ी पूलिंग में जुड़ने के लिए:* `/addlot 10 बोरी गेहूँ` लिखकर भेजें।"
         )
         bot.reply_to(message, reply_text, parse_mode="Markdown")
 
-        spoken = f"आज आज़ादपुर मंडी में सरसों का मॉडल भाव ₹{p['modal_price']} प्रति क्विंटल है। गांव के आढ़ती से ₹{diff} ज्यादा मिल रहे हैं।"
+        spoken = f"आज आज़ादपुर मंडी में {norm_crop} का मॉडल भाव ₹{p['modal_price']} प्रति क्विंटल है। गांव के आढ़ती से ₹{diff} ज्यादा मिल रहे हैं।"
         dispatch_voice_safe(bot, message.chat.id, spoken)
 
-    # 3. /mystock command handler (Farmer stock & bags query)
+    # 4. /mystock command handler (Farmer stock & bags query)
     @bot.message_handler(commands=['mystock'])
     def handle_my_stock(message):
         user = resolve_farmer(message)
@@ -178,7 +212,7 @@ def init_telegram_bot(token=None):
         if not lots:
             reply_text = (
                 f"ℹ️ *{user['name']} जी, आपके खाते में अभी कोई सक्रिय लॉट नहीं है।*\n\n"
-                f"महिंद्रा बोलेरो में अपनी फसल बुक करने के लिए `/addlot 4` लिखकर भेजें।"
+                f"महिंद्रा बोलेरो में अपनी फसल बुक करने के लिए `/addlot 10 बोरी गेहूँ` लिखकर भेजें।"
             )
             bot.reply_to(message, reply_text, parse_mode="Markdown")
             return
@@ -188,34 +222,53 @@ def init_telegram_bot(token=None):
         total_profit = sum(l.get("extra_profit_rs", 0) for l in lots)
 
         lines = [
-            f"📦 *आपके सक्रिय लॉट ({len(lots)} लॉट | {total_qtl} क्विंटल)*",
+            f"📦 *आपके सक्रिय लॉट ({len(lots)} लॉट | {total_qtl:.1f} क्विंटल)*",
             f"━━━━━━━━━━━━━━━━━━"
         ]
         for l in lots:
             lines.append(
                 f"• *#{l['lot_id']}* — {l['crop']}\n"
-                f"  ⚖️ {l['quantity_quintals']} Qtl ({l['bags_count']} बोरी) | स्थिति: `{l['status']}`\n"
+                f"  ⚖️ {l['quantity_quintals']:.1f} Qtl ({l['bags_count']} बोरी) | स्थिति: `{l['status']}`\n"
                 f"  💰 अतिरिक्त मुनाफा: +₹{l.get('extra_profit_rs', 0):.0f}"
             )
         lines.append(f"\n📊 *कुल:* {total_bags} बोरियां (50kg प्रत्येक) | कुल बचत: +₹{total_profit:.0f}")
 
         bot.reply_to(message, "\n".join(lines), parse_mode="Markdown")
 
-        spoken = f"आपके खाते में कुल {len(lots)} लॉट और {total_qtl} क्विंटल फसल दर्ज है।"
+        spoken = f"आपके खाते में कुल {len(lots)} लॉट और {total_qtl:.1f} क्विंटल फसल दर्ज है।"
         dispatch_voice_safe(bot, message.chat.id, spoken)
 
-    # 4. /addlot command handler (Add harvest lot to SQLite & update Bolero pool)
+    # 5. /addlot command handler (Add harvest lot to SQLite & update Bolero pool with bags)
     @bot.message_handler(commands=['addlot'])
     def handle_add_lot(message):
         user = resolve_farmer(message)
         phone = user.get("phone", "+91 98123 45099")
+        msg_raw = message.text.lower()
         parts = message.text.split()
 
-        try:
-            qty = float(parts[1]) if len(parts) > 1 else 4.0
-        except ValueError:
-            qty = 4.0
-        crop = parts[2] if len(parts) > 2 else "Mustard"
+        crop = "Mustard"
+        if "wheat" in msg_raw or "गेहूं" in msg_raw or "कनक" in msg_raw: crop = "Wheat"
+        elif "potato" in msg_raw or "आलू" in msg_raw or "aloo" in msg_raw: crop = "Potato"
+        elif "paddy" in msg_raw or "धान" in msg_raw: crop = "Paddy"
+        elif "gram" in msg_raw or "चना" in msg_raw: crop = "Gram"
+
+        # Check numeric quantity
+        raw_num = 4.0
+        for p in parts[1:]:
+            clean_p = p.replace("bori", "").replace("बोरी", "").replace("bags", "").replace("qtl", "").strip()
+            try:
+                raw_num = float(clean_p)
+                break
+            except ValueError:
+                continue
+
+        # If user explicitly specified bags/bori, convert 1 bag = 0.5 Qtl
+        if any(unit in msg_raw for unit in ["bori", "बोरी", "bag", "कट्टे", "katte"]):
+            qty = max(0.5, round(raw_num * 0.5, 1))
+            bags = int(raw_num)
+        else:
+            qty = max(0.5, round(raw_num, 1))
+            bags = int(round(qty * 2))
 
         # Create lot in SQLite database (automatically recalculates active Bolero pool)
         lot = create_lot(phone, crop, qty, channel="telegram_bot")
@@ -225,15 +278,15 @@ def init_telegram_bot(token=None):
             f"✅ *बधाई! आपकी फसल पूलिंग में दर्ज हो गई है!*\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
-            f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']} क्विंटल / {lot['bags_count']} बोरी)\n"
+            f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
             f"🚚 *गाड़ी:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')}\n"
             f"📊 *बोलेरो क्षमता:* *{pool.get('capacity_percentage', 100)}% FULL* ({pool.get('status', 'FULL_DISPATCH_LOCKED')})\n"
             f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
-            f"🎉 *प्रोजेक्टर डैशबोर्ड पर आपकी गाड़ी 100% फुल हो गई है!*"
+            f"🎉 *डैशबोर्ड पर आपकी गाड़ी 100% फुल हो गई है!*"
         )
         bot.reply_to(message, reply_text, parse_mode="Markdown")
 
-        spoken = f"बधाई {user['name']} जी! आपका {qty} क्विंटल सरसों का लॉट दर्ज हो गया है। बोलेरो गाड़ी {pool.get('capacity_percentage', 100)}% भर चुकी है और आज़ादपुर मंडी के लिए लॉक हो गई है।"
+        spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। बोलेरो गाड़ी {pool.get('capacity_percentage', 100)}% भर चुकी है।"
         dispatch_voice_safe(bot, message.chat.id, spoken)
 
     # 5. /modlot command handler (Modify lot quantity)
@@ -409,25 +462,31 @@ def init_telegram_bot(token=None):
     @bot.message_handler(content_types=['photo'])
     def handle_photo(message):
         bot.reply_to(message, "🔍 पत्ती की जांच की जा रही है... कृपया 2 सेकंड प्रतीक्षा करें।")
-        file_info = bot.get_file(message.photo[-1].file_id)
-        downloaded_file = bot.download_file(file_info.file_path)
+        try:
+            file_info = bot.get_file(message.photo[-1].file_id)
+            downloaded_file = bot.download_file(file_info.file_path)
 
-        diag = analyze_crop_leaf_disease(image_bytes=downloaded_file, crop_hint="Mustard")
-        presc = get_prescription(crop=diag.get("crop", "Mustard"), disease=diag.get("disease", "Alternaria Blight"))
+            diag = analyze_crop_leaf_disease(image_bytes=downloaded_file)
+            crop_detected = diag.get("crop", "Mustard")
+            presc = get_prescription(crop=crop_detected, disease=diag.get("disease", "Alternaria Blight"))
 
-        hindi_reply = (
-            f"🌿 *फसल रोग जांच रिपोर्ट*\n"
-            f"━━━━━━━━━━━━━━━━━━\n"
-            f"🦠 *बीमारी:* {presc['disease_name']}\n"
-            f"🧪 *असली टेक्निकल साल्ट:* `{presc['chemical_salt']}`\n"
-            f"⚖️ *नाप (Dosage):* {presc['dosage_hi']}\n"
-            f"💰 *अनुमानित खर्च:* {presc.get('estimated_price', '₹180')}\n\n"
-            f"⚠️ *चेतावनी:* {presc['warning_hi']}"
-        )
-        bot.reply_to(message, hindi_reply, parse_mode="Markdown")
+            hindi_reply = (
+                f"🌿 *फसल रोग जांच रिपोर्ट (ICAR AI Doctor)*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🌾 *फसल:* {crop_detected}\n"
+                f"🦠 *बीमारी:* {presc['disease_name']}\n"
+                f"🧪 *असली टेक्निकल साल्ट:* `{presc['chemical_salt']}`\n"
+                f"⚖️ *नाप (Dosage):* {presc['dosage_hi']}\n"
+                f"💰 *अनुमानित खर्च:* {presc.get('estimated_price', '₹180 - ₹240')} (80% बचत)\n\n"
+                f"⚠️ *चेतावनी:* {presc['warning_hi']}"
+            )
+            bot.reply_to(message, hindi_reply, parse_mode="Markdown")
 
-        spoken_summary = f"आपकी फसल में {presc['disease_name']} है। दुकानदार से {presc['chemical_salt']} मांगें। {presc['warning_hi']}"
-        dispatch_voice_safe(bot, message.chat.id, spoken_summary)
+            spoken_summary = f"आपकी {crop_detected} की फसल में {presc['disease_name']} है। दुकानदार से {presc['chemical_salt']} मांगें। {presc['warning_hi']}"
+            dispatch_voice_safe(bot, message.chat.id, spoken_summary)
+        except Exception as e:
+            print(f"[Telegram Bot Error] Photo processing error: {e}")
+            bot.reply_to(message, "⚠️ फोटो प्रोसेस करने में त्रुटि हुई। कृपया स्पष्ट रोशनी में पत्ती की तस्वीर पुनः भेजें।")
 
     # 11. Voice & Audio handler (Voice note ingestion)
     @bot.message_handler(content_types=['voice', 'audio'])
@@ -447,21 +506,23 @@ def init_telegram_bot(token=None):
         reply = (
             f"🎙️ *आवाज समझ ली गई है!*\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"📦 *फसल:* {lot['crop']} ({lot['quantity_quintals']} क्विंटल / {lot['bags_count']} बोरी)\n"
+            f"📦 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
             f"🚚 *गाड़ी:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')}\n"
             f"📊 *पूल स्थिति:* {pool.get('capacity_percentage', 100)}% FULL\n"
             f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f}"
         )
         bot.reply_to(message, reply, parse_mode="Markdown")
 
-        spoken = f"आपकी {lot['quantity_quintals']} क्विंटल फसल बोलेरो गाड़ी में दर्ज हो गई है।"
+        spoken = f"आपकी {lot['quantity_quintals']:.1f} क्विंटल फसल बोलेरो गाड़ी में दर्ज हो गई है।"
         dispatch_voice_safe(bot, message.chat.id, spoken)
 
     # 12. Conversational fallback handler for natural text inputs
     @bot.message_handler(func=lambda m: True, content_types=['text'])
     def handle_text_message(message):
         text_lower = message.text.lower()
-        if "mandi" in text_lower or "भाव" in text_lower or "मंडी" in text_lower:
+        if "tubewell" in text_lower or "ट्यूबवेल" in text_lower or "पानी" in text_lower or "सिंचाई" in text_lower:
+            return handle_tubewell_advisory_bot(message)
+        elif "mandi" in text_lower or "भाव" in text_lower or "मंडी" in text_lower:
             return handle_mandi_prices(message)
         elif "stock" in text_lower or "स्टॉक" in text_lower or "लॉट" in text_lower or "बोरी" in text_lower:
             return handle_my_stock(message)

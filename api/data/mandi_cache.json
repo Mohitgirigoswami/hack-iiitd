@@ -7,7 +7,7 @@
     "max_price": 5580,
     "local_trader_price": 4700,
     "unit": "per Quintal (100kg)",
-    "last_updated": "2026-10-17 09:30 AM"
+    "last_updated": "2026-10-18 08:30 AM"
   },
   "Wheat": {
     "commodity_hi": "गेहूँ (कनक)",
@@ -17,7 +17,17 @@
     "max_price": 2520,
     "local_trader_price": 2150,
     "unit": "per Quintal (100kg)",
-    "last_updated": "2026-10-17 09:30 AM"
+    "last_updated": "2026-10-18 08:30 AM"
+  },
+  "Potato": {
+    "commodity_hi": "आलू (Pukhraj / Jyoti)",
+    "mandi": "Azadpur, Delhi",
+    "modal_price": 1420,
+    "min_price": 1250,
+    "max_price": 1580,
+    "local_trader_price": 1100,
+    "unit": "per Quintal (100kg)",
+    "last_updated": "2026-10-18 08:30 AM"
   },
   "Paddy": {
     "commodity_hi": "धान (Basmati 1509)",
@@ -27,6 +37,16 @@
     "max_price": 3800,
     "local_trader_price": 3100,
     "unit": "per Quintal (100kg)",
-    "last_updated": "2026-10-17 09:30 AM"
+    "last_updated": "2026-10-18 08:30 AM"
+  },
+  "Gram": {
+    "commodity_hi": "चना (Desi Chana)",
+    "mandi": "Rohtak APMC, Haryana",
+    "modal_price": 5850,
+    "min_price": 5600,
+    "max_price": 6050,
+    "local_trader_price": 5200,
+    "unit": "per Quintal (100kg)",
+    "last_updated": "2026-10-18 08:30 AM"
   }
 }

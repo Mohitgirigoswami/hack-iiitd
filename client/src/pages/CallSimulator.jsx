@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   Phone, PhoneOff, ArrowLeft, Volume2, CheckCircle2, ChevronRight, 
-  Mic, Sparkles, MapPin, ShieldCheck, UserCheck, RefreshCw, MessageSquare, Bell, Package
+  Mic, Sparkles, MapPin, ShieldCheck, UserCheck, RefreshCw, MessageSquare, Bell, Package,
+  Droplets, Zap, CloudRain
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRole } from '../context/RoleContext';
@@ -29,6 +30,7 @@ export default function CallSimulator() {
   const [isNotifDrawerOpen, setIsNotifDrawerOpen] = useState(false);
   const [stockSubmenuMode, setStockSubmenuMode] = useState(false);
   const [userStockLots, setUserStockLots] = useState([]);
+  const [tubewellData, setTubewellData] = useState(null);
 
   const audioContextRef = useRef(null);
 
@@ -161,6 +163,7 @@ export default function CallSimulator() {
     setCallActive(true);
     setPoolJoined(false);
     setDualAlertDispatched(false);
+    setTubewellData(null);
     playDtmfTone('1');
 
     try {
@@ -194,6 +197,7 @@ export default function CallSimulator() {
     setIsSpeaking(false);
     setRegistrationMode(false);
     setStockSubmenuMode(false);
+    setTubewellData(null);
     if (window.khetosAudio) {
       window.khetosAudio.pause();
       window.khetosAudio.currentTime = 0;
@@ -301,6 +305,8 @@ export default function CallSimulator() {
       } else if (sendDigit === '33') {
         setDualAlertDispatched(true);
         setUserStockLots([]);
+      } else if (sendDigit === '4' || data.status === 'TUBEWELL_ADVISORY') {
+        setTubewellData(data.advisory);
       }
     } catch (err) {
       console.error('Call simulator keypad error:', err);
@@ -554,6 +560,41 @@ export default function CallSimulator() {
           </div>
         )}
 
+        {/* Key 4 Smart Tubewell Advisory Panel */}
+        {callActive && tubewellData && (
+          <div className="p-4 bg-sky-500/10 border border-sky-500/40 rounded-2xl space-y-3 animate-fade-in text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sky-400 font-bold">
+                <Droplets className="w-4 h-4" />
+                <span>IVR Key 4: Smart Tubewell & Irrigation Advisor</span>
+              </div>
+              <span className="font-mono text-sky-400 font-bold text-xs bg-sky-500/20 px-2 py-0.5 rounded border border-sky-500/30">
+                {tubewellData.hours_recommended > 0 ? `${tubewellData.hours_recommended} hrs today` : '0.0 hrs (Rain Alert)'}
+              </span>
+            </div>
+
+            <div className="space-y-1.5">
+              <p className="text-foreground font-bold text-xs">
+                {tubewellData.headline_hi}
+              </p>
+              <p className="text-muted-fg text-[11px] leading-relaxed">
+                {tubewellData.reason_hi}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border/60 text-[10px]">
+              <div className="flex items-center gap-1.5 text-muted-fg">
+                <Zap className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                <span>Roster: {tubewellData.power_roster?.active_slot || '06:00 - 12:00 (Day)'}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-muted-fg text-right justify-end">
+                <CloudRain className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                <span>Rain: {tubewellData.weather_forecast?.rain_probability_pct || 0}% (~{tubewellData.weather_forecast?.rainfall_expected_mm || 0}mm)</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Quick Stage Key 2 Demo Button */}
         {callActive && !poolJoined && !registrationMode && !stockSubmenuMode && (
           <button
@@ -610,7 +651,7 @@ export default function CallSimulator() {
             { num: '1', sub: registrationMode ? 'Bhalaut' : stockSubmenuMode ? '+1 Qtl (31)' : 'Mandi Rates' },
             { num: '2', sub: registrationMode ? 'Kalanaur' : stockSubmenuMode ? '-1 Qtl (32)' : 'Pool Truck ⚡' },
             { num: '3', sub: registrationMode ? 'Najafgarh' : stockSubmenuMode ? 'Delete (33)' : 'My Stock' },
-            { num: '4', sub: registrationMode ? 'Madina' : stockSubmenuMode ? '-' : 'Weather' },
+            { num: '4', sub: registrationMode ? 'Madina' : stockSubmenuMode ? '-' : 'Tubewell ⚡ (4)' },
             { num: '5', sub: stockSubmenuMode ? '-' : 'Order Status' },
             { num: '6', sub: stockSubmenuMode ? '-' : 'KhetPin' },
             { num: '7', sub: stockSubmenuMode ? '-' : 'Payments' },

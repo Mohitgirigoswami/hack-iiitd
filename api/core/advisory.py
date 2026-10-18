@@ -69,7 +69,7 @@ def generate_hindi_audio(text):
     try:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
-        data = loop.run_until_complete(_synthesize_neural_edge(text))
+        data = loop.run_until_complete(asyncio.wait_for(_synthesize_neural_edge(text), timeout=5.0))
         loop.close()
         if data and len(data) > 0:
             _tts_cache[text] = data

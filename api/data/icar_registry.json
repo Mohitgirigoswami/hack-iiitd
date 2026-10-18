@@ -39,6 +39,26 @@
       "warning_hi": "पत्तियों के निचले हिस्से पर छिड़काव अवश्य करें।"
     }
   },
+  "Potato": {
+    "Late Blight": {
+      "name_hi": "पिछेता झुलसा (Late Blight of Potato)",
+      "chemical_salt": "Mancozeb 75% WP + Cymoxanil 8%",
+      "dosage": "2.5 grams per litre of water (approx. 500g in 200L water per acre)",
+      "dosage_hi": "2.5 ग्राम प्रति लीटर पानी में घोलकर पत्तियों पर दोनों तरफ छिड़कें",
+      "market_price_approx": "₹240 - ₹280 per 500g",
+      "phi_days": 14,
+      "warning_hi": "बादल छाए रहने या कोहरे के समय तुरंत छिड़काव करें। 80% बचत के लिए जेनेरिक साल्ट ही खरीदें।"
+    },
+    "Early Blight": {
+      "name_hi": "अगेती झुलसा (Early Blight of Potato)",
+      "chemical_salt": "Chlorothalonil 75% WP",
+      "dosage": "2.0 grams per litre of water",
+      "dosage_hi": "2.0 ग्राम प्रति लीटर पानी में मिलाकर छिड़कें",
+      "market_price_approx": "₹190 per 500g",
+      "phi_days": 12,
+      "warning_hi": "निचली पत्तियों पर गोल छल्लेदार धब्बे दिखते ही पहला छिड़काव करें।"
+    }
+  },
   "Paddy": {
     "Bacterial Leaf Blight": {
       "name_hi": "जीवाणु झुलसा (Bacterial Blight)",

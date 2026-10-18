@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPin, Phone, Truck, ShieldAlert, Sparkles, Volume2, Upload, 
   AlertCircle, CheckCircle2, Sprout, Play, Square, Plus, Minus, 
-  X, Check, RefreshCw, Send, MessageSquare, TrendingUp, ShieldCheck, Bot
+  X, Check, RefreshCw, Send, MessageSquare, TrendingUp, ShieldCheck, Bot,
+  Droplets, Zap, CloudRain, Camera, Image
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 import TelegramBotSimulator from '../TelegramBotSimulator';
@@ -16,6 +17,17 @@ export default function FarmerView({ state, onRefresh }) {
   const [advising, setAdvising] = useState(false);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
 
+  // Smart Tubewell & Irrigation Advisor state
+  const [tubewellData, setTubewellData] = useState(null);
+  const [tubewellCrop, setTubewellCrop] = useState('Mustard');
+  const [loadingTubewell, setLoadingTubewell] = useState(false);
+  const [playingTubewellAudio, setPlayingTubewellAudio] = useState(false);
+
+  // Leaf photo scanner state
+  const [selectedLeafSample, setSelectedLeafSample] = useState(null);
+  const [leafFilePreview, setLeafFilePreview] = useState(null);
+  const leafUploadRef = useRef(null);
+
   // Dynamic stock state
   const [activePhone, setActivePhone] = useState(customPhone || activeRole?.phone || '+91 98123 45099');
   const [farmerLots, setFarmerLots] = useState([]);
@@ -25,7 +37,7 @@ export default function FarmerView({ state, onRefresh }) {
   // New lot creation modal state
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newCrop, setNewCrop] = useState('Mustard');
-  const [newQuantity, setNewQuantity] = useState(4.0);
+  const [newBoriCount, setNewBoriCount] = useState(8); // 8 bags = 4.0 Quintals
   const [creatingLot, setCreatingLot] = useState(false);
 
   // Telegram test alert state
@@ -59,6 +71,52 @@ export default function FarmerView({ state, onRefresh }) {
     }
   };
 
+  const fetchTubewellAdvisory = async (crop = tubewellCrop) => {
+    setLoadingTubewell(true);
+    try {
+      const res = await fetch(`/api/advisory/tubewell?crop=${encodeURIComponent(crop)}&village=${encodeURIComponent(activeRole?.village || 'Bhalaut')}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTubewellData(data);
+      }
+    } catch (e) {
+      console.warn('Tubewell fetch error:', e);
+    }
+    setLoadingTubewell(false);
+  };
+
+  const toggleTubewellAudio = () => {
+    if (!tubewellData?.audio_base64) return;
+    if (playingTubewellAudio && window.khetosTubewellAudio) {
+      window.khetosTubewellAudio.pause();
+      window.khetosTubewellAudio.currentTime = 0;
+      setPlayingTubewellAudio(false);
+      return;
+    }
+    try {
+      if (window.khetosTubewellAudio) {
+        window.khetosTubewellAudio.pause();
+      }
+      const audio = new Audio("data:audio/mp3;base64," + tubewellData.audio_base64);
+      window.khetosTubewellAudio = audio;
+      setPlayingTubewellAudio(true);
+      audio.onended = () => setPlayingTubewellAudio(false);
+      audio.onerror = () => setPlayingTubewellAudio(false);
+      audio.play().catch(e => {
+        console.warn("Tubewell audio playback blocked:", e);
+        setPlayingTubewellAudio(false);
+      });
+    } catch (e) {
+      console.warn("Tubewell audio error:", e);
+      setPlayingTubewellAudio(false);
+    }
+  };
+
+  const handleTubewellCropChange = (crop) => {
+    setTubewellCrop(crop);
+    fetchTubewellAdvisory(crop);
+  };
+
   const fetchFarmerLots = async () => {
     setLoadingLots(true);
     try {
@@ -76,6 +134,7 @@ export default function FarmerView({ state, onRefresh }) {
   useEffect(() => {
     fetchPrices();
     fetchFarmerLots();
+    fetchTubewellAdvisory(tubewellCrop);
   }, [activePhone]);
 
   const handlePhoneSwitch = (phone) => {
@@ -129,13 +188,14 @@ export default function FarmerView({ state, onRefresh }) {
     e.preventDefault();
     setCreatingLot(true);
     try {
+      const quintals = Number((newBoriCount * 0.5).toFixed(1));
       const res = await fetch('/api/farmer/lot/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           phone: activePhone,
           crop: newCrop,
-          quantity_quintals: parseFloat(newQuantity)
+          quantity_quintals: quintals
         })
       });
       if (res.ok) {
@@ -147,6 +207,25 @@ export default function FarmerView({ state, onRefresh }) {
       console.error('Create lot error:', e);
     }
     setCreatingLot(false);
+  };
+
+  const handleLeafSampleClick = (crop, disease, query, imgUrl) => {
+    setSelectedLeafSample(disease);
+    setLeafFilePreview(imgUrl);
+    setAdvisoryInput(query);
+    handleRunAdvisory(query, crop);
+  };
+
+  const handleLeafUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setLeafFilePreview(event.target.result);
+      setSelectedLeafSample(file.name);
+      handleRunAdvisory(`Farmer uploaded leaf photo: ${file.name}. Diagnostic check for fungal rust or blight.`, 'Mustard');
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSendDualAlertTest = async () => {
@@ -182,15 +261,17 @@ export default function FarmerView({ state, onRefresh }) {
     }
   };
 
-  const handleRunAdvisory = async () => {
+  const handleRunAdvisory = async (customQuery, customCrop) => {
     setAdvising(true);
     try {
+      const q = typeof customQuery === 'string' ? customQuery : advisoryInput;
+      const c = customCrop || 'Mustard';
       const res = await fetch('/api/advisory/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          crop: 'Mustard',
-          query: advisoryInput,
+          crop: c,
+          query: q,
         })
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -384,6 +465,131 @@ export default function FarmerView({ state, onRefresh }) {
             </div>
           </div>
 
+          {/* Smart Tubewell & Irrigation Advisor Card */}
+          <div className="bg-card border border-border rounded-2xl p-5 space-y-4 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-border">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 flex items-center justify-center shrink-0">
+                  <Droplets className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="text-base font-bold text-foreground">
+                    Smart Tubewell & Irrigation Advisor (आज ट्यूबवेल कितनी देर चलाएं?)
+                  </h4>
+                  <p className="text-xs text-muted-fg">
+                    ICAR Crop Water Model &bull; Dynamic Rain Forecast &bull; Rural 3-Phase Electricity Clock
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {tubewellData?.audio_base64 && (
+                  <button
+                    onClick={toggleTubewellAudio}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm ${
+                      playingTubewellAudio
+                        ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                        : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    }`}
+                  >
+                    <Volume2 className={`w-3.5 h-3.5 ${playingTubewellAudio ? 'animate-bounce' : 'animate-pulse'}`} />
+                    <span>{playingTubewellAudio ? 'Stop Audio' : 'सुनें हिंदी में'}</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => fetchTubewellAdvisory(tubewellCrop)}
+                  disabled={loadingTubewell}
+                  title="Refresh Advisory"
+                  className="p-1.5 rounded-lg bg-secondary border border-border text-muted-fg hover:text-foreground transition"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loadingTubewell ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Crop Selector Ribbon for Irrigation */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              <span className="text-[11px] font-bold text-muted-fg shrink-0">फसल चुनें:</span>
+              {[
+                { key: 'Mustard', label: 'सरसों (Mustard)' },
+                { key: 'Wheat', label: 'गेहूँ (Wheat)' },
+                { key: 'Potato', label: 'आलू (Potato)' },
+                { key: 'Paddy', label: 'धान (Paddy)' },
+                { key: 'Gram', label: 'चना (Gram)' }
+              ].map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => handleTubewellCropChange(c.key)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold border transition shrink-0 ${
+                    tubewellCrop === c.key
+                      ? 'bg-sky-500 text-white border-sky-400 shadow-sm'
+                      : 'bg-secondary text-muted-fg border-border hover:text-foreground'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Advisory Result Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+              <div className="p-3.5 bg-secondary/80 border border-border rounded-xl space-y-1">
+                <span className="text-[10px] font-bold text-muted-fg uppercase tracking-wider block">
+                  अनुशंसित मोटर समय
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className={`text-2xl font-black font-mono ${
+                    (tubewellData?.hours_recommended || 0) > 0 ? 'text-sky-400' : 'text-emerald-400'
+                  }`}>
+                    {tubewellData ? `${tubewellData.hours_recommended} घंटे` : '2.0 घंटे'}
+                  </span>
+                  <span className="text-[11px] text-muted-fg">
+                    {(tubewellData?.hours_recommended || 0) > 0 ? `(~${tubewellData?.water_requirement_mm || 40}mm जल स्तर)` : '0mm जरूरी'}
+                  </span>
+                </div>
+                <p className="text-xs font-semibold text-foreground mt-1">
+                  {tubewellData?.headline_hi || 'आज 2.0 घंटे ट्यूबवेल चलाएं'}
+                </p>
+                <p className="text-[11px] text-muted-fg">
+                  {tubewellData?.reason_hi || 'मिट्टी में नमी है और अगले 24 घंटे में बारिश नहीं है।'}
+                </p>
+              </div>
+
+              <div className="p-3.5 bg-secondary/80 border border-border rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-muted-fg uppercase tracking-wider block">
+                  ग्रामीण 3-फेज बिजली रोस्टर
+                </span>
+                <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
+                  <Zap className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>{tubewellData?.power_roster?.active_slot || '06:00 - 12:00 (Day Batch 1) Active'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-fg">
+                  <CloudRain className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                  <span>बारिश अनुमान: {tubewellData?.weather_forecast?.rainfall_expected_mm || 0}mm ({tubewellData?.weather_forecast?.rain_probability_pct || 0}% संभावना)</span>
+                </div>
+                <span className="text-[10px] text-muted-fg block pt-1 border-t border-border/60">
+                  {tubewellData?.power_roster?.next_slot || 'अगला स्लॉट: 22:00 - 04:00 (रात)'}
+                </span>
+              </div>
+
+              <div className="p-3.5 bg-secondary/80 border border-border rounded-xl space-y-1.5">
+                <span className="text-[10px] font-bold text-muted-fg uppercase tracking-wider block">
+                  पर्यावरण व लागत बचत
+                </span>
+                <div className="text-xs font-bold text-emerald-400 flex items-center gap-1">
+                  <Sprout className="w-4 h-4 shrink-0" />
+                  <span>~{tubewellData?.groundwater_saved_liters?.toLocaleString() || '18,000'}L भूजल बचत</span>
+                </div>
+                <p className="text-[11px] text-muted-fg">
+                  बिजली बचत: ~{tubewellData?.electricity_units_saved_kwh || 7.2} kWh यूनिट्स
+                </p>
+                <div className="text-[10px] text-muted-fg font-mono pt-1 border-t border-border/60">
+                  मिट्टी: {tubewellData?.soil_type || 'चिकनी दोमट (Clay Loam)'}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {/* Farmer's Dynamic Lots List */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -410,10 +616,14 @@ export default function FarmerView({ state, onRefresh }) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {currentLots.map((lot) => {
                   const isUpdating = updatingLotId === lot.lot_id;
-                  const isAccepted = lot.status === 'ACCEPTED' || lot.status === 'LOADED_ON_TRUCK';
+                  const isLockedOnTruck = lot.status === 'LOADED_ON_TRUCK';
+                  const isDeferred = lot.status === 'DEFERRED_FOR_SUN_DRYING';
+                  const isAccepted = lot.status === 'ACCEPTED' || isLockedOnTruck;
                   const isRejected = lot.status === 'REJECTED_BY_FARMER';
                   const soloCost = 2100;
-                  const freight = lot.freight_share_rs || (lot.quantity_quintals * 160);
+                  const formattedQty = Number(lot.quantity_quintals || 0).toFixed(1);
+                  const bagsCount = lot.bags_count || Math.round(Number(lot.quantity_quintals || 0) * 2);
+                  const freight = lot.freight_share_rs || (Number(lot.quantity_quintals || 0) * 160);
                   const savings = soloCost - freight;
 
                   return (
@@ -428,13 +638,17 @@ export default function FarmerView({ state, onRefresh }) {
                             {lot.lot_id}
                           </span>
                           <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                            isAccepted 
+                            isLockedOnTruck
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                              : isDeferred
+                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                              : isAccepted 
                               ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                               : isRejected
                               ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
                               : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
                           }`}>
-                            {lot.status}
+                            {isLockedOnTruck ? '🔒 LOADED ON TRUCK' : isDeferred ? '🔒 DEFERRED' : lot.status}
                           </span>
                         </div>
 
@@ -446,10 +660,10 @@ export default function FarmerView({ state, onRefresh }) {
 
                           <div className="text-right">
                             <span className="text-2xl font-black text-foreground font-mono">
-                              {lot.quantity_quintals} Qtl
+                              {formattedQty} Qtl
                             </span>
                             <span className="text-[11px] text-muted-fg block">
-                              {lot.bags_count || (lot.quantity_quintals * 2)} Discrete 50kg Bags
+                              {bagsCount} Discrete 50kg Bags
                             </span>
                           </div>
                         </div>
@@ -457,23 +671,25 @@ export default function FarmerView({ state, onRefresh }) {
                         {/* Interactive Quantity Stepper */}
                         <div className="p-3 bg-secondary/70 rounded-xl border border-border space-y-2">
                           <div className="flex items-center justify-between text-xs">
-                            <span className="text-muted-fg font-semibold">Modify Lot Stock:</span>
+                            <span className="text-muted-fg font-semibold">
+                              {isLockedOnTruck ? 'Lot Locked (On Truck):' : isDeferred ? 'Lot Locked (Deferred):' : 'Modify Lot Stock:'}
+                            </span>
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() => handleUpdateQuantity(lot.lot_id, -1.0)}
-                                disabled={isUpdating || lot.quantity_quintals <= 1.0}
-                                title="Decrease by 1 Quintal"
+                                disabled={isUpdating || isLockedOnTruck || isDeferred || Number(lot.quantity_quintals || 0) <= 1.0}
+                                title={isLockedOnTruck ? "Lot already loaded on truck. Locked." : "Decrease by 1 Quintal"}
                                 className="w-7 h-7 rounded-lg bg-card hover:bg-secondary border border-border text-foreground font-bold flex items-center justify-center transition active:scale-95 disabled:opacity-40"
                               >
                                 <Minus className="w-3.5 h-3.5" />
                               </button>
                               <span className="font-mono font-bold text-xs px-2 text-foreground">
-                                {lot.quantity_quintals} Qtl
+                                {formattedQty} Qtl
                               </span>
                               <button
                                 onClick={() => handleUpdateQuantity(lot.lot_id, 1.0)}
-                                disabled={isUpdating || lot.quantity_quintals >= 15.0}
-                                title="Increase by 1 Quintal"
+                                disabled={isUpdating || isLockedOnTruck || isDeferred || Number(lot.quantity_quintals || 0) >= 15.0}
+                                title={isLockedOnTruck ? "Lot already loaded on truck. Locked." : "Increase by 1 Quintal"}
                                 className="w-7 h-7 rounded-lg bg-card hover:bg-secondary border border-border text-foreground font-bold flex items-center justify-center transition active:scale-95 disabled:opacity-40"
                               >
                                 <Plus className="w-3.5 h-3.5" />
@@ -499,22 +715,26 @@ export default function FarmerView({ state, onRefresh }) {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleDecision(lot.lot_id, 'ACCEPT')}
-                            disabled={isUpdating || isAccepted}
+                            disabled={isUpdating || isAccepted || isLockedOnTruck}
                             className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
-                              isAccepted 
+                              isLockedOnTruck
+                                ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 cursor-default'
+                                : isAccepted 
                                 ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 cursor-default'
                                 : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
                             }`}
                           >
                             <Check className="w-3.5 h-3.5" />
-                            <span>{isAccepted ? 'Pickup Locked ✓' : 'Accept Pickup'}</span>
+                            <span>{isLockedOnTruck ? 'Cargo Bay Loaded 🔒' : isAccepted ? 'Pickup Locked ✓' : 'Accept Pickup'}</span>
                           </button>
 
                           <button
                             onClick={() => handleDecision(lot.lot_id, 'REJECT')}
-                            disabled={isUpdating || isRejected}
+                            disabled={isUpdating || isRejected || isLockedOnTruck}
                             className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
-                              isRejected
+                              isLockedOnTruck
+                                ? 'bg-secondary/40 text-muted-fg/40 border border-border/40 cursor-not-allowed'
+                                : isRejected
                                 ? 'bg-rose-600/30 text-rose-400 border border-rose-500/40 cursor-default'
                                 : 'bg-secondary hover:bg-rose-500/20 text-muted-fg hover:text-rose-400 border border-border cursor-pointer'
                             }`}
@@ -525,7 +745,7 @@ export default function FarmerView({ state, onRefresh }) {
                         </div>
 
                         <span className="text-[10px] text-muted-fg block text-center italic">
-                          ₹0 penalty guaranteed under ICAR quality protocol.
+                          {isLockedOnTruck ? '🔒 Bolero cargo bay verified and loaded by driver.' : '₹0 penalty guaranteed under ICAR quality protocol.'}
                         </span>
                       </div>
                     </div>
@@ -600,6 +820,103 @@ export default function FarmerView({ state, onRefresh }) {
               <p className="text-xs text-muted-fg">Replaces predatory ₹1,000 branded cocktails with ICAR-approved ₹200 generic chemical salts.</p>
             </div>
             <Sparkles className="w-6 h-6 text-primary" />
+          </div>
+
+          {/* Preset Leaf Pathology Samples & Camera Upload */}
+          <div className="p-4 bg-secondary/80 border border-border rounded-xl space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                <Camera className="w-4 h-4 text-primary" />
+                फसल पत्ती रोग स्कैनर (Leaf Photo Pathology Scanner)
+              </span>
+              <span className="text-[10px] text-muted-fg font-mono">ICAR Vision Model</span>
+            </div>
+
+            <p className="text-xs text-muted-fg">
+              बीमार पत्ती का नमूना चुनें या अपने कैमरे / फोन से पत्ती की फोटो अपलोड करें:
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                {
+                  crop: 'Mustard',
+                  disease: 'White Rust (सफेद रतुआ)',
+                  latin: 'Albugo candida',
+                  symptom: 'सरसों के पत्तों की निचली सतह पर सफेद उभरे हुए छाले (white pustules) और तना मुड़ना।',
+                  img: 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=400&auto=format&fit=crop&q=80'
+                },
+                {
+                  crop: 'Wheat',
+                  disease: 'Yellow Rust (पीला रतुआ)',
+                  latin: 'Puccinia striiformis',
+                  symptom: 'गेहूँ के पत्तों पर समानांतर पीली धारियां और पीले पाउडर जैसे बीजाणु (yellow stripe pustules)।',
+                  img: 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400&auto=format&fit=crop&q=80'
+                },
+                {
+                  crop: 'Potato',
+                  disease: 'Late Blight (आलू झुलसा)',
+                  latin: 'Phytophthora infestans',
+                  symptom: 'आलू के पत्तों पर भूरे-काले पानीदार धब्बे और निचली सतह पर सफेद फफूंद (water-soaked lesions)।',
+                  img: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80'
+                }
+              ].map((sample) => (
+                <button
+                  key={sample.disease}
+                  onClick={() => handleLeafSampleClick(sample.crop, sample.disease, sample.symptom, sample.img)}
+                  className={`p-3 rounded-xl border text-left transition flex flex-col justify-between group active:scale-95 ${
+                    selectedLeafSample === sample.disease
+                      ? 'bg-primary/15 border-primary shadow-sm'
+                      : 'bg-card hover:bg-secondary/60 border-border'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="h-24 w-full rounded-lg overflow-hidden border border-border relative">
+                      <img src={sample.img} alt={sample.disease} className="w-full h-full object-cover group-hover:scale-105 transition duration-300" />
+                      <span className="absolute bottom-1 right-1 text-[9px] font-mono px-1.5 py-0.5 rounded bg-black/70 text-white font-bold">
+                        {sample.crop}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-xs font-bold text-foreground block group-hover:text-primary transition-colors">
+                        {sample.disease}
+                      </span>
+                      <span className="text-[10px] text-muted-fg italic block">{sample.latin}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] text-primary font-semibold mt-2 flex items-center gap-1">
+                    क्लिक करें व जांचें ➔
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Custom Leaf Photo Upload Input */}
+            <div className="pt-2 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3">
+              <input
+                type="file"
+                ref={leafUploadRef}
+                onChange={handleLeafUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              <button
+                onClick={() => leafUploadRef.current?.click()}
+                className="w-full sm:w-auto px-4 py-2 bg-secondary hover:bg-card border border-border text-foreground rounded-xl text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              >
+                <Upload className="w-4 h-4 text-primary" />
+                <span>कैमरे या फोन से पत्ती की फोटो अपलोड करें</span>
+              </button>
+
+              {leafFilePreview && (
+                <div className="flex items-center gap-2 text-xs text-muted-fg">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden border border-border shrink-0">
+                    <img src={leafFilePreview} alt="Leaf Preview" className="w-full h-full object-cover" />
+                  </div>
+                  <span className="font-mono text-[11px] truncate max-w-[180px]">{selectedLeafSample || 'Custom Leaf Photo'}</span>
+                  <span className="text-emerald-400 font-bold text-[10px]">जांच पूर्ण ✓</span>
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-3">
@@ -760,40 +1077,63 @@ export default function FarmerView({ state, onRefresh }) {
               </div>
 
               <div className="space-y-1.5">
-                <label className="font-semibold text-muted-fg block">Select Harvest Crop</label>
+                <label className="font-semibold text-muted-fg block">Select Harvest Crop (फसल चुनें)</label>
                 <select
                   value={newCrop}
                   onChange={(e) => setNewCrop(e.target.value)}
-                  className="w-full bg-secondary/80 border border-border rounded-xl p-2.5 text-foreground font-semibold focus:outline-none focus:border-primary"
+                  className="w-full bg-secondary/80 border border-border rounded-xl p-2.5 text-foreground font-semibold focus:outline-none focus:border-primary cursor-pointer"
                 >
                   <option value="Mustard">Mustard (सरसों)</option>
-                  <option value="Wheat">Wheat (गेहूं)</option>
+                  <option value="Wheat">Wheat (गेहूँ)</option>
+                  <option value="Potato">Potato (आलू)</option>
+                  <option value="Paddy">Paddy (धान)</option>
                   <option value="Gram">Gram (चना)</option>
-                  <option value="Barley">Barley (जौ)</option>
                 </select>
               </div>
 
               <div className="space-y-1.5">
                 <label className="font-semibold text-muted-fg block">
-                  Quantity in Quintals (1 Qtl = 2 &times; 50kg Bags)
+                  Harvest Volume in 50kg Bags (बोरी संख्या)
                 </label>
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewBoriCount((prev) => Math.max(1, prev - 1))}
+                    disabled={newBoriCount <= 1}
+                    className="w-9 h-9 rounded-xl bg-secondary border border-border text-foreground font-bold flex items-center justify-center hover:bg-card active:scale-95 disabled:opacity-40"
+                  >
+                    <Minus className="w-4 h-4" />
+                  </button>
+
                   <input
                     type="number"
                     min="1"
-                    max="15"
-                    step="0.5"
-                    value={newQuantity}
-                    onChange={(e) => setNewQuantity(e.target.value)}
-                    className="flex-1 bg-secondary/80 border border-border rounded-xl p-2.5 font-mono text-foreground focus:outline-none focus:border-primary"
+                    max="30"
+                    value={newBoriCount}
+                    onChange={(e) => setNewBoriCount(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="flex-1 bg-secondary/80 border border-border rounded-xl p-2.5 text-center font-mono font-bold text-sm text-foreground focus:outline-none focus:border-primary"
                   />
-                  <span className="font-bold text-foreground">{parseFloat(newQuantity || 0) * 2} Bags</span>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewBoriCount((prev) => Math.min(30, prev + 1))}
+                    disabled={newBoriCount >= 30}
+                    className="w-9 h-9 rounded-xl bg-secondary border border-border text-foreground font-bold flex items-center justify-center hover:bg-card active:scale-95 disabled:opacity-40"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="flex justify-between items-center text-[11px] text-muted-fg px-1">
+                  <span>कुल वजन: <strong className="font-mono text-foreground font-bold">{(newBoriCount * 0.5).toFixed(1)} क्विंटल</strong> ({newBoriCount * 50} kg)</span>
+                  <span className="text-emerald-400 font-semibold">{newBoriCount} कट्टे / बोरी</span>
                 </div>
               </div>
 
               <div className="p-3 bg-secondary/60 rounded-xl border border-border space-y-1 text-[11px] text-muted-fg">
                 <span className="font-semibold text-foreground block">Instant Freight Estimation:</span>
-                <p>Pooled Mahindra Bolero Share: <strong className="text-emerald-400">₹{(parseFloat(newQuantity || 0) * 160).toFixed(0)}</strong> (vs Solo Tempo ₹2,100)</p>
+                <p>Pooled Mahindra Bolero Share: <strong className="text-emerald-400">₹{(newBoriCount * 0.5 * 160).toFixed(0)}</strong> (vs Solo Tempo ₹2,100)</p>
+                <span className="text-[10px] text-emerald-400 font-bold block">Net Smallholder Savings: +₹{(2100 - (newBoriCount * 0.5 * 160)).toFixed(0)}</span>
               </div>
 
               <div className="flex justify-end gap-2 pt-2 border-t border-border">

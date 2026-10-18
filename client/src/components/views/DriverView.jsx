@@ -15,9 +15,9 @@ export default function DriverView({ state, onRefresh }) {
   const [playingAudio, setPlayingAudio] = useState(false);
   const [backhaulDispatched, setBackhaulDispatched] = useState(false);
   const [checks, setChecks] = useState({
-    stitched: true,
-    visual: true,
-    dryness: true,
+    stitched: false,
+    visual: false,
+    dryness: false,
   });
   const [submitting, setSubmitting] = useState(false);
   const [lastActionMsg, setLastActionMsg] = useState(null);
@@ -36,6 +36,10 @@ export default function DriverView({ state, onRefresh }) {
   const pool = state?.active_pool || {};
 
   const currentLot = lots.find(l => l.lot_id === selectedLotId) || lots[0];
+
+  useEffect(() => {
+    setChecks({ stitched: false, visual: false, dryness: false });
+  }, [selectedLotId]);
 
   useEffect(() => {
     fetchWeather();
@@ -132,6 +136,15 @@ export default function DriverView({ state, onRefresh }) {
 
   const handleAction = async (action) => {
     if (!currentLot) return;
+    if (currentLot.status === 'LOADED_ON_TRUCK' || currentLot.status === 'DEFERRED_FOR_SUN_DRYING') {
+      setLastActionMsg("⚠️ This lot is already finalized and cannot be modified.");
+      return;
+    }
+    if (action === 'APPROVE' && !(checks.stitched && checks.visual && checks.dryness)) {
+      setLastActionMsg("⚠️ All 3 quality checklist items must be verified before approving.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const res = await fetch('/api/driver/inspect', {
@@ -139,23 +152,28 @@ export default function DriverView({ state, onRefresh }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lot_id: currentLot.lot_id,
-          action: action
+          action: action,
+          checklist: checks
         })
       });
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
       setLastActionMsg(
         action === 'APPROVE'
-          ? `Approved and loaded ${currentLot.farmer_name}'s lot into cargo bay.`
-          : `Deferred ${currentLot.farmer_name}'s lot for sun-drying with ₹0 penalty.`
+          ? `✓ Approved and loaded ${currentLot.farmer_name}'s lot into cargo bay.`
+          : `⚠️ Deferred ${currentLot.farmer_name}'s lot for sun-drying with ₹0 penalty.`
       );
       if (onRefresh) onRefresh();
-      setSubmitting(false);
     } catch (err) {
       console.error('Driver inspection error:', err);
-      setLastActionMsg(`Failed to record ${action.toLowerCase()} action. Please try again.`);
+      setLastActionMsg(err.message || `Failed to record ${action.toLowerCase()} action.`);
+    } finally {
       setSubmitting(false);
     }
   };
+
+  const isChecklistComplete = checks.stitched && checks.visual && checks.dryness;
+  const isLotFinalized = currentLot?.status === 'LOADED_ON_TRUCK' || currentLot?.status === 'DEFERRED_FOR_SUN_DRYING' || currentLot?.status === 'REJECTED_BY_FARMER';
 
   return (
     <div className="space-y-6">
@@ -342,75 +360,122 @@ export default function DriverView({ state, onRefresh }) {
                   </div>
                   <div className="text-right">
                     <span className="text-xs text-muted-fg">Declared Quantity:</span>
-                    <p className="text-lg font-bold text-foreground">{currentLot.bags_count} Bags ({currentLot.quantity_quintals} Qtl)</p>
+                    <p className="text-lg font-bold text-foreground">{currentLot.bags_count} Bags ({Number(currentLot.quantity_quintals || 0).toFixed(1)} Qtl)</p>
                   </div>
                 </div>
 
-                {/* 3 Checklist Items */}
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 p-3.5 bg-secondary/50 rounded-xl border border-border cursor-pointer hover:border-primary/50 transition">
-                    <input
-                      type="checkbox"
-                      checked={checks.stitched}
-                      onChange={(e) => setChecks({ ...checks, stitched: e.target.checked })}
-                      className="w-4 h-4 rounded accent-primary"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-foreground block">1. Bag Stitching & Farmer ID Stencil</span>
-                      <span className="text-[11px] text-muted-fg">Standard 50kg gunny bags, double stitched, zero tears or leaking seams.</span>
+                {/* State Locking: If lot is already finalized, lock the gate completely */}
+                {isLotFinalized ? (
+                  <div className="space-y-3">
+                    {currentLot.status === 'LOADED_ON_TRUCK' ? (
+                      <div className="p-4 bg-emerald-500/15 border border-emerald-500/30 rounded-2xl flex items-center justify-between gap-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                          </div>
+                          <div>
+                            <span className="font-bold text-emerald-400 text-sm block">Cargo Bay Loaded & Quality Verified</span>
+                            <span className="text-[11px] text-muted-fg block mt-0.5">
+                              All 3 quality criteria verified. Tamper-proof dispatch lock engaged. State cannot be modified.
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 font-mono font-bold text-xs border border-emerald-500/40 shrink-0">
+                          ✓ LOCKED
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="p-4 bg-amber-500/15 border border-amber-500/30 rounded-2xl flex items-center justify-between gap-3.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                            <AlertTriangle className="w-5 h-5 text-amber-400" />
+                          </div>
+                          <div>
+                            <span className="font-bold text-amber-400 text-sm block">Lot Deferred for Sun-Drying</span>
+                            <span className="text-[11px] text-muted-fg block mt-0.5">
+                              Moisture or foreign matter flagged. ₹0 penalty guaranteed for farmer. State locked.
+                            </span>
+                          </div>
+                        </div>
+                        <span className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 font-mono font-bold text-xs border border-amber-500/40 shrink-0">
+                          DEFERRED
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <>
+                    {/* 3 Checklist Items - Unchecked by default */}
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-3 p-3.5 bg-secondary/50 rounded-xl border border-border cursor-pointer hover:border-primary/50 transition">
+                        <input
+                          type="checkbox"
+                          checked={checks.stitched}
+                          onChange={(e) => setChecks({ ...checks, stitched: e.target.checked })}
+                          className="w-4 h-4 rounded accent-primary cursor-pointer"
+                        />
+                        <div>
+                          <span className="text-xs font-bold text-foreground block">1. Bag Stitching & Farmer ID Stencil</span>
+                          <span className="text-[11px] text-muted-fg">Standard 50kg gunny bags, double stitched, zero tears or leaking seams.</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-3 p-3.5 bg-secondary/50 rounded-xl border border-border cursor-pointer hover:border-primary/50 transition">
+                        <input
+                          type="checkbox"
+                          checked={checks.visual}
+                          onChange={(e) => setChecks({ ...checks, visual: e.target.checked })}
+                          className="w-4 h-4 rounded accent-primary cursor-pointer"
+                        />
+                        <div>
+                          <span className="text-xs font-bold text-foreground block">2. Visual Seed Cleanliness</span>
+                          <span className="text-[11px] text-muted-fg">Uniform seed color, zero stones, soil clumps, or insect infestation.</span>
+                        </div>
+                      </label>
+
+                      <label className="flex items-center gap-3 p-3.5 bg-secondary/50 rounded-xl border border-border cursor-pointer hover:border-primary/50 transition">
+                        <input
+                          type="checkbox"
+                          checked={checks.dryness}
+                          onChange={(e) => setChecks({ ...checks, dryness: e.target.checked })}
+                          className="w-4 h-4 rounded accent-primary cursor-pointer"
+                        />
+                        <div>
+                          <span className="text-xs font-bold text-foreground block">3. Tactile Grain Dryness Rub (&lt;8% Moisture)</span>
+                          <span className="text-[11px] text-muted-fg">Grains rattle crisply when rubbed; absence of fermented moisture odor.</span>
+                        </div>
+                      </label>
                     </div>
-                  </label>
 
-                  <label className="flex items-center gap-3 p-3.5 bg-secondary/50 rounded-xl border border-border cursor-pointer hover:border-primary/50 transition">
-                    <input
-                      type="checkbox"
-                      checked={checks.visual}
-                      onChange={(e) => setChecks({ ...checks, visual: e.target.checked })}
-                      className="w-4 h-4 rounded accent-primary"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-foreground block">2. Visual Seed Cleanliness</span>
-                      <span className="text-[11px] text-muted-fg">Uniform dark seed color, zero stones, soil clumps, or insect infestation.</span>
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      <button
+                        onClick={() => handleAction('DEFER')}
+                        disabled={submitting}
+                        className="flex items-center justify-center gap-2 py-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-400 font-bold rounded-xl border border-rose-500/30 transition active:scale-95 text-xs cursor-pointer disabled:opacity-50"
+                      >
+                        <XCircle className="w-4 h-4 text-rose-700 dark:text-rose-400" />
+                        Defer Lot for Sun-Drying (₹0 Penalty)
+                      </button>
+
+                      <button
+                        onClick={() => handleAction('APPROVE')}
+                        disabled={submitting || !isChecklistComplete}
+                        className={`flex items-center justify-center gap-2 py-3 font-bold rounded-xl shadow-lg transition active:scale-95 text-xs cursor-pointer ${
+                          isChecklistComplete
+                            ? 'bg-primary hover:bg-primary/90 text-primary-foreground'
+                            : 'bg-secondary text-muted-fg border border-border opacity-50 cursor-not-allowed'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        {!isChecklistComplete ? 'Verify All 3 Criteria to Load' : 'Approve & Load Cargo Bay'}
+                      </button>
                     </div>
-                  </label>
-
-                  <label className="flex items-center gap-3 p-3.5 bg-secondary/50 rounded-xl border border-border cursor-pointer hover:border-primary/50 transition">
-                    <input
-                      type="checkbox"
-                      checked={checks.dryness}
-                      onChange={(e) => setChecks({ ...checks, dryness: e.target.checked })}
-                      className="w-4 h-4 rounded accent-primary"
-                    />
-                    <div>
-                      <span className="text-xs font-bold text-foreground block">3. Tactile Grain Dryness Rub</span>
-                      <span className="text-[11px] text-muted-fg">Grains rattle crisply when rubbed; absence of fermented odor (&lt;8% moisture).</span>
-                    </div>
-                  </label>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-                  <button
-                    onClick={() => handleAction('DEFER')}
-                    disabled={submitting}
-                    className="flex items-center justify-center gap-2 py-3 bg-rose-500/15 hover:bg-rose-500/25 text-rose-700 dark:text-rose-400 font-bold rounded-xl border border-rose-500/30 transition active:scale-95 text-xs"
-                  >
-                    <XCircle className="w-4 h-4 text-rose-700 dark:text-rose-400" />
-                    Defer Lot for Sun-Drying (₹0 Penalty)
-                  </button>
-
-                  <button
-                    onClick={() => handleAction('APPROVE')}
-                    disabled={submitting}
-                    className="flex items-center justify-center gap-2 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg transition active:scale-95 text-xs"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Approve & Load Cargo Bay
-                  </button>
-                </div>
+                  </>
+                )}
 
                 {lastActionMsg && (
-                  <div className="p-3 bg-secondary rounded-xl border border-border text-xs text-foreground text-center animate-fade-in">
+                  <div className="p-3 bg-secondary rounded-xl border border-border text-xs text-foreground text-center animate-fade-in font-medium">
                     {lastActionMsg}
                   </div>
                 )}
