@@ -736,7 +736,7 @@ export default function FarmerView({ state, onRefresh }) {
                   return (
                     <div 
                       key={lot.lot_id}
-                      className="bg-card border border-border rounded-2xl p-5 space-y-4 flex flex-col justify-between shadow-sm relative overflow-hidden"
+                      className="bg-card border border-border hover:border-primary/40 rounded-2xl p-5 space-y-4 flex flex-col justify-between shadow-sm relative overflow-hidden interactive-card"
                     >
                       {/* Top Lot Meta */}
                       <div className="space-y-2">
@@ -823,12 +823,12 @@ export default function FarmerView({ state, onRefresh }) {
                           <button
                             onClick={() => handleDecision(lot.lot_id, 'ACCEPT')}
                             disabled={isUpdating || isAccepted || isLockedOnTruck}
-                            className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                            className={`flex-1 py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 btn-tactile ${
                               isLockedOnTruck
                                 ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 cursor-default'
                                 : isAccepted 
                                 ? 'bg-emerald-600/30 text-emerald-400 border border-emerald-500/40 cursor-default'
-                                : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
+                                : 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-xs'
                             }`}
                           >
                             <Check className="w-3.5 h-3.5" />
@@ -838,12 +838,12 @@ export default function FarmerView({ state, onRefresh }) {
                           <button
                             onClick={() => handleDecision(lot.lot_id, 'REJECT')}
                             disabled={isUpdating || isRejected || isLockedOnTruck}
-                            className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                            className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 btn-tactile ${
                               isLockedOnTruck
                                 ? 'bg-secondary/40 text-muted-fg/40 border border-border/40 cursor-not-allowed'
                                 : isRejected
                                 ? 'bg-rose-600/30 text-rose-400 border border-rose-500/40 cursor-default'
-                                : 'bg-secondary hover:bg-rose-500/20 text-muted-fg hover:text-rose-400 border border-border cursor-pointer'
+                                : 'bg-secondary hover:bg-rose-500/20 text-muted-fg hover:text-rose-400 border border-border cursor-pointer shadow-xs'
                             }`}
                           >
                             <X className="w-3.5 h-3.5" />

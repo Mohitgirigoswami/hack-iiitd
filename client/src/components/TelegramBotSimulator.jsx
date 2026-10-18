@@ -421,7 +421,7 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
           return (
             <div
               key={m.id}
-              className={`flex items-start gap-2 ${isBot ? 'justify-start' : 'justify-end'}`}
+              className={`flex items-start gap-2 ${isBot ? 'justify-start' : 'justify-end'} animate-scale-in`}
             >
               {isBot && (
                 <img 
@@ -432,14 +432,14 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
               )}
 
               <div
-                className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed shadow-sm relative ${
+                className={`max-w-[85%] rounded-2xl p-3 text-xs leading-relaxed shadow-sm relative transition-all duration-200 ${
                   isBot
                     ? 'bg-[#182533] text-[#e4ecf2] border border-[#243343] rounded-tl-sm'
                     : 'bg-[#2b5278] text-white border border-[#3b6a9b] rounded-tr-sm'
                 }`}
               >
                 {m.imagePreview && (
-                  <div className="mb-2 rounded-xl overflow-hidden border border-white/20 bg-black/40">
+                  <div className="mb-2 rounded-xl overflow-hidden border border-white/20 bg-black/40 animate-fade-in">
                     <img src={m.imagePreview} alt="Leaf Scan" className="w-full h-32 object-cover" />
                   </div>
                 )}
@@ -449,9 +449,18 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
                 {m.audio_base64 && (
                   <button
                     onClick={() => playVoice(idx, m.audio_base64)}
-                    className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-[11px] font-bold transition cursor-pointer"
+                    className="mt-2 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-[11px] font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
                   >
-                    <Volume2 className={`w-3.5 h-3.5 ${playingAudioIdx === idx ? 'animate-bounce text-emerald-300' : ''}`} />
+                    {playingAudioIdx === idx ? (
+                      <span className="flex items-end gap-0.5 h-3.5 pb-0.5">
+                        <span className="w-1 h-2 bg-emerald-400 rounded-full animate-wave" />
+                        <span className="w-1 h-3.5 bg-emerald-400 rounded-full animate-wave [animation-delay:0.15s]" />
+                        <span className="w-1 h-1.5 bg-emerald-400 rounded-full animate-wave [animation-delay:0.3s]" />
+                        <span className="w-1 h-3 bg-emerald-400 rounded-full animate-wave [animation-delay:0.45s]" />
+                      </span>
+                    ) : (
+                      <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                    )}
                     <span>{playingAudioIdx === idx ? 'Playing Hindi Audio...' : 'Listen to Spoken Hindi'}</span>
                   </button>
                 )}
@@ -464,7 +473,7 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
                         key={oIdx}
                         onClick={() => handleSendCommand(opt.cmd)}
                         disabled={loading}
-                        className="px-2.5 py-1.5 bg-[#253547] hover:bg-[#2e4259] active:scale-95 text-[#64b5f6] hover:text-white border border-[#374e69] hover:border-emerald-500/60 rounded-xl text-[11px] font-bold transition flex items-center justify-center text-center shadow-sm disabled:opacity-50 cursor-pointer"
+                        className="px-2.5 py-1.5 bg-[#253547] hover:bg-[#2e4259] active:scale-95 text-[#64b5f6] hover:text-white border border-[#374e69] hover:border-emerald-500/60 rounded-xl text-[11px] font-bold transition-all duration-150 flex items-center justify-center text-center shadow-sm disabled:opacity-50 cursor-pointer btn-tactile"
                       >
                         {opt.label}
                       </button>

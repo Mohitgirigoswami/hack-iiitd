@@ -36,7 +36,7 @@ export default function LandingPage() {
 
         {/* Live Corridor Status Bar - Bento KPI Strip */}
         <div className="pt-3 grid grid-cols-2 sm:grid-cols-4 gap-3 text-left">
-          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs transition-all duration-300 hover:border-primary/40 hover:-translate-y-1">
+          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs interactive-card animate-slide-up stagger-1">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span className="text-[10px] text-muted-fg uppercase tracking-wider font-semibold">Active Corridor</span>
@@ -44,7 +44,7 @@ export default function LandingPage() {
             <span className="font-bold text-foreground text-xs sm:text-sm block truncate">Rohtak ➔ Azadpur APMC</span>
           </div>
 
-          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs transition-all duration-300 hover:border-primary/40 hover:-translate-y-1">
+          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs interactive-card animate-slide-up stagger-2">
             <div className="flex items-center gap-1.5 mb-1">
               <Truck className="w-3.5 h-3.5 text-primary" />
               <span className="text-[10px] text-muted-fg uppercase tracking-wider font-semibold">Fleet Vehicle</span>
@@ -52,7 +52,7 @@ export default function LandingPage() {
             <span className="font-bold text-foreground text-xs sm:text-sm block truncate">Mahindra Bolero (1.5T)</span>
           </div>
 
-          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs transition-all duration-300 hover:border-primary/40 hover:-translate-y-1">
+          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs interactive-card animate-slide-up stagger-3">
             <div className="flex items-center gap-1.5 mb-1">
               <span className="text-amber-500 font-bold text-xs">₹</span>
               <span className="text-[10px] text-muted-fg uppercase tracking-wider font-semibold">Benchmark Modal</span>
@@ -60,7 +60,7 @@ export default function LandingPage() {
             <span className="font-mono font-bold text-primary text-xs sm:text-sm block">₹5,420 / Qtl</span>
           </div>
 
-          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs transition-all duration-300 hover:border-primary/40 hover:-translate-y-1">
+          <div className="p-3.5 bg-card/80 backdrop-blur-sm border border-border/70 rounded-2xl shadow-xs interactive-card animate-slide-up stagger-4">
             <div className="flex items-center gap-1.5 mb-1">
               <Zap className="w-3.5 h-3.5 text-emerald-400" />
               <span className="text-[10px] text-muted-fg uppercase tracking-wider font-semibold">Smallholder Gain</span>
@@ -84,14 +84,14 @@ export default function LandingPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {/* Card 1: Farmer Portal */}
-          <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 space-y-4 flex flex-col justify-between group">
+          <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 interactive-card space-y-4 flex flex-col justify-between group">
             {/* Ambient Corner Glow */}
-            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-emerald-500/10 group-hover:bg-emerald-500/20 blur-xl transition-all duration-300 pointer-events-none" />
+            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-emerald-500/10 group-hover:bg-emerald-500/25 blur-xl transition-all duration-300 pointer-events-none" />
             {/* Bottom Expanding Accent Line */}
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform duration-300">
                   <Sprout className="w-5 h-5" />
                 </div>
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-800 dark:text-emerald-400 border border-emerald-500/30">
@@ -113,20 +113,20 @@ export default function LandingPage() {
             </div>
             <button
               onClick={() => handleEnterPortal('FARMER')}
-              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
+              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer btn-tactile flex items-center justify-center gap-2 group/btn shadow-xs"
             >
               Enter as Farmer
-              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1.5 transition-transform duration-200" />
             </button>
           </div>
 
           {/* Card 2: Transporter / Driver Console */}
-          <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 space-y-4 flex flex-col justify-between group">
-            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-blue-500/10 group-hover:bg-blue-500/20 blur-xl transition-all duration-300 pointer-events-none" />
+          <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm hover:border-blue-500/40 border border-border/70 rounded-3xl p-6 interactive-card space-y-4 flex flex-col justify-between group">
+            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-blue-500/10 group-hover:bg-blue-500/25 blur-xl transition-all duration-300 pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                <div className="w-11 h-11 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform duration-300">
                   <Truck className="w-5 h-5" />
                 </div>
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-400 border border-blue-500/30">
@@ -148,20 +148,20 @@ export default function LandingPage() {
             </div>
             <button
               onClick={() => handleEnterPortal('DRIVER')}
-              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
+              className="w-full py-2.5 px-4 bg-secondary hover:bg-blue-600 hover:text-white text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer btn-tactile flex items-center justify-center gap-2 group/btn shadow-xs"
             >
               Enter as Transporter
-              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1.5 transition-transform duration-200" />
             </button>
           </div>
 
           {/* Card 3: Wholesale Buyer Gateway */}
-          <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 space-y-4 flex flex-col justify-between group">
-            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-amber-500/10 group-hover:bg-amber-500/20 blur-xl transition-all duration-300 pointer-events-none" />
+          <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm hover:border-amber-500/40 border border-border/70 rounded-3xl p-6 interactive-card space-y-4 flex flex-col justify-between group">
+            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-amber-500/10 group-hover:bg-amber-500/25 blur-xl transition-all duration-300 pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform duration-300">
                   <Building2 className="w-5 h-5" />
                 </div>
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-800 dark:text-amber-400 border border-amber-500/30">
@@ -183,20 +183,20 @@ export default function LandingPage() {
             </div>
             <button
               onClick={() => handleEnterPortal('BUYER')}
-              className="w-full py-2.5 px-4 bg-secondary hover:bg-primary hover:text-primary-foreground text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
+              className="w-full py-2.5 px-4 bg-secondary hover:bg-amber-600 hover:text-white text-foreground font-bold text-xs rounded-xl border border-border transition-all duration-200 cursor-pointer btn-tactile flex items-center justify-center gap-2 group/btn shadow-xs"
             >
               Enter as Wholesale Buyer
-              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1.5 transition-transform duration-200" />
             </button>
           </div>
 
           {/* Card 4: APMC Mandi Command Center */}
-          <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm hover:border-primary/40 border border-border/70 rounded-3xl p-6 transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 space-y-4 flex flex-col justify-between group">
-            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-indigo-500/10 group-hover:bg-indigo-500/20 blur-xl transition-all duration-300 pointer-events-none" />
+          <div className="relative overflow-hidden bg-card/80 backdrop-blur-sm hover:border-indigo-500/40 border border-border/70 rounded-3xl p-6 interactive-card space-y-4 flex flex-col justify-between group">
+            <div className="absolute -top-12 -right-12 w-28 h-28 rounded-full bg-indigo-500/10 group-hover:bg-indigo-500/25 blur-xl transition-all duration-300 pointer-events-none" />
             <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shadow-xs group-hover:scale-105 transition-transform">
+                <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center shadow-xs group-hover:scale-110 transition-transform duration-300">
                   <Activity className="w-5 h-5" />
                 </div>
                 <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/30">
@@ -218,10 +218,10 @@ export default function LandingPage() {
             </div>
             <button
               onClick={() => handleEnterPortal('ADMIN')}
-              className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all duration-200 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-2 group/btn"
+              className="w-full py-2.5 px-4 bg-primary text-primary-foreground font-bold text-xs rounded-xl shadow-lg hover:brightness-110 transition-all duration-200 cursor-pointer btn-tactile flex items-center justify-center gap-2 group/btn shadow-xs"
             >
               Enter Command Center
-              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1.5 transition-transform duration-200" />
             </button>
           </div>
         </div>

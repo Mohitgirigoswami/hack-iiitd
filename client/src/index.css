@@ -123,3 +123,35 @@ html, body {
 ::-webkit-scrollbar-thumb:hover {
   background: rgb(var(--color-muted-fg));
 }
+
+/* Micro-interaction & Animation Utilities */
+.interactive-card {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.2s ease;
+}
+.interactive-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -6px rgba(0, 0, 0, 0.25), 0 0 20px -4px rgb(var(--color-primary) / 0.15);
+}
+
+.btn-tactile {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), filter 0.15s ease, background-color 0.15s ease;
+}
+.btn-tactile:active {
+  transform: scale(0.96);
+}
+
+/* Stagger entrance delays */
+.stagger-1 { animation-delay: 60ms; }
+.stagger-2 { animation-delay: 120ms; }
+.stagger-3 { animation-delay: 180ms; }
+.stagger-4 { animation-delay: 240ms; }
+
+/* Accessible motion safety */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

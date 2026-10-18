@@ -1,6 +1,7 @@
 # Internal and private folders
 internal/
 private/
+.agents/
 
 # Environment files
 .env

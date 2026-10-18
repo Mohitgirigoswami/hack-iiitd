@@ -22,7 +22,7 @@ Replicate Credentia's document verification scanner for agricultural lots: an au
 Build 3D tilted glowing cards for Farmer, Bolero Transporter, and Institutional Buyer with corner radial spot glows, glowing bottom border beams, and Lucide icons. Align Navbar and auth forms with hairline borders (`border-white/[0.08]`) and inner top highlights (`inset 0 1px 0 rgba(255,255,255,0.08)`).
 
 ### R5. Live Telegram Bot Daemon & Location Geo-Sync
-Connect the backend to `@KhetOSSaathiBot` using token `8821984224:AAHtUCnBxFpnid72Q35Ui0C27-3JmJxyqXo`. Implement background long-polling handling `/start`, `/mandi`, `/mystock`, `/addlot`, `/modlot`, `/dellot`, native GPS pin drop conversion to Khet-PIN, and voice note audio dispatch.
+Connect the backend to `@KhetOSSaathiBot` using token `REDACTED_TELEGRAM_BOT_TOKEN`. Implement background long-polling handling `/start`, `/mandi`, `/mystock`, `/addlot`, `/modlot`, `/dellot`, native GPS pin drop conversion to Khet-PIN, and voice note audio dispatch.
 
 ## Acceptance Criteria
 

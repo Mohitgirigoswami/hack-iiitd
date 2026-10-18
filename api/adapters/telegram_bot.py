@@ -23,8 +23,8 @@ from state_manager import state
 
 load_dotenv()
 
-# Hardcoded production token from project specification with env override
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "8821984224:AAHtUCnBxFpnid72Q35Ui0C27-3JmJxyqXo").strip()
+# Production token loaded strictly from private .env (never hardcoded in source)
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "").strip()
 
 def dispatch_voice_safe(bot, chat_id, spoken_text):
     """

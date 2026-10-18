@@ -105,12 +105,12 @@ export default function Dashboard() {
           </button>
         </div>
       ) : (
-        <>
+        <div key={currentRoleId} className="animate-fade-in">
           {currentRoleId === 'FARMER' && <FarmerView state={state} onRefresh={fetchState} />}
           {currentRoleId === 'DRIVER' && <DriverView state={state} onRefresh={fetchState} />}
           {currentRoleId === 'BUYER' && <BuyerView state={state} onRefresh={fetchState} />}
           {currentRoleId === 'ADMIN' && <AdminView state={state} onRefresh={fetchState} />}
-        </>
+        </div>
       )}
     </div>
   );
