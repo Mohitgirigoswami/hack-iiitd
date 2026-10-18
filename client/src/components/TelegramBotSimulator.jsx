@@ -14,7 +14,15 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
     {
       id: 1,
       sender: 'bot',
-      text: `🌾 नमस्ते रामू जी!\nKhetOS (खेतOS) किसान सहायता बॉट में आपका स्वागत है।\n\n📍 आपका खेतपिन: HR-ROH-78G4 (Bhalaut)\n📱 फोन CLI: ${currentPhone} (स्वचालित प्रमाणित)\n\nआज़ादपुर मंडी भाव जानने के लिए /mandi दबाएं।\nस्टॉक देखने के लिए /mystock दबाएं।\nसिंचाई सलाह के लिए /tubewell दबाएं।\nपत्ती रोग जांच के लिए कैमरा आइकन 📷 दबाएं।`,
+      text: `🌾 नमस्ते रामू जी!\nKhetOS (खेतOS) किसान साथी में आपका स्वागत है।\n\n📍 आपका खेतपिन: HR-ROH-78G4 (Bhalaut)\n📱 फोन CLI: ${currentPhone} (स्वचालित प्रमाणित)\n\n⚡ आपको कुछ टाइप करने की जरूरत नहीं है! नीचे दिए गए विकल्पों में से चुनें:`,
+      options: [
+        { label: '🌾 फसल जोड़ें (Add Crop)', cmd: '/addlot_start' },
+        { label: '🚿 ट्यूबवेल सलाह (Tubewell)', cmd: '/tubewell' },
+        { label: '📈 मंडी भाव (Mandi Rates)', cmd: '/mandi' },
+        { label: '📦 मेरा स्टॉक (My Stock)', cmd: '/mystock' },
+        { label: '📸 पत्ती रोग जांच (Doctor)', cmd: '/photo' },
+        { label: '🚛 गाड़ी स्थिति (Truck)', cmd: '/truckstatus' }
+      ],
       timestamp: 'Just now'
     }
   ]);
@@ -66,6 +74,7 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
         sender: 'bot',
         text: data.reply || 'कमांड प्रोसेस हो गया है।',
         audio_base64: data.audio_base64,
+        options: data.options || [],
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       };
       setMessages((prev) => [...prev, botMsg]);
@@ -175,14 +184,14 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
   };
 
   const quickCommands = [
-    { label: '/tubewell (सिंचाई)', cmd: '/tubewell' },
-    { label: '/mandi (सरसों भाव)', cmd: '/mandi' },
-    { label: '/mandi gehun (गेहूँ)', cmd: '/mandi gehun' },
-    { label: '/mandi aloo (आलू)', cmd: '/mandi aloo' },
-    { label: '/addlot 10 बोरी गेहूँ', cmd: '/addlot 10 बोरी गेहूँ' },
-    { label: '/mystock (स्टॉक)', cmd: '/mystock' },
-    { label: '/dellot 1 (₹0 रद्द)', cmd: '/dellot 1' },
-    { label: '/help (मदद)', cmd: '/help' },
+    { label: '🌾 फसल जोड़ें', cmd: '/addlot_start' },
+    { label: '🚿 ट्यूबवेल सलाह', cmd: '/tubewell' },
+    { label: '📈 मंडी भाव', cmd: '/mandi' },
+    { label: '📦 मेरा स्टॉक', cmd: '/mystock' },
+    { label: '📸 फसल रोग', cmd: '/photo' },
+    { label: '🚛 गाड़ी स्थिति', cmd: '/truckstatus' },
+    { label: '📞 सहायता', cmd: '/help' },
+    { label: '🔄 रीफ्रेश', cmd: '/start' },
   ];
 
   return (
@@ -267,11 +276,27 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
                 {m.audio_base64 && (
                   <button
                     onClick={() => playVoice(idx, m.audio_base64)}
-                    className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-[11px] font-bold transition"
+                    className="mt-2 flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/40 text-[11px] font-bold transition cursor-pointer"
                   >
                     <Volume2 className={`w-3.5 h-3.5 ${playingAudioIdx === idx ? 'animate-bounce text-emerald-300' : ''}`} />
                     <span>{playingAudioIdx === idx ? 'Playing Hindi Audio...' : 'Listen to Spoken Hindi'}</span>
                   </button>
+                )}
+
+                {/* Interactive Telegram Inline Buttons */}
+                {isBot && m.options && m.options.length > 0 && (
+                  <div className="mt-2.5 pt-2 border-t border-white/10 grid grid-cols-2 gap-1.5">
+                    {m.options.map((opt, oIdx) => (
+                      <button
+                        key={oIdx}
+                        onClick={() => handleSendCommand(opt.cmd)}
+                        disabled={loading}
+                        className="px-2.5 py-1.5 bg-[#253547] hover:bg-[#2e4259] active:scale-95 text-[#64b5f6] hover:text-white border border-[#374e69] hover:border-emerald-500/60 rounded-xl text-[11px] font-bold transition flex items-center justify-center text-center shadow-sm disabled:opacity-50 cursor-pointer"
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
                 )}
 
                 <div className="text-[9px] text-[#708499] text-right mt-1 font-mono">

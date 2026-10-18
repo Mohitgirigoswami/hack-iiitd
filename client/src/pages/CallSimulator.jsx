@@ -31,6 +31,10 @@ export default function CallSimulator() {
   const [stockSubmenuMode, setStockSubmenuMode] = useState(false);
   const [userStockLots, setUserStockLots] = useState([]);
   const [tubewellData, setTubewellData] = useState(null);
+  const [activeSubmenu, setActiveSubmenu] = useState('MAIN'); // 'MAIN' | 'CROP' | 'BAG' | 'MANDI' | 'TUBEWELL' | 'STOCK' | 'TRUCK'
+  const [chosenCropCode, setChosenCropCode] = useState('21');
+  const [mandiPriceData, setMandiPriceData] = useState(null);
+  const [truckData, setTruckData] = useState(null);
 
   const audioContextRef = useRef(null);
 
@@ -258,17 +262,20 @@ export default function CallSimulator() {
       }
     }
 
+    // Handle return to Main Menu
+    if (digit === '*' || digit === '#') {
+      setActiveSubmenu('MAIN');
+      setStockSubmenuMode(false);
+      speakHindi("मुख्य मेनू पर वापस आ गए हैं। मंडी भाव के लिए 1 दबाएं, पूलिंग के लिए 2 दबाएं, स्टॉक के लिए 3 दबाएं, ट्यूबवेल सलाह के लिए 4 दबाएं।");
+      return;
+    }
+
     // Dynamic Multi-Key Stock Submenu Mapping
     let sendDigit = digit;
     if (stockSubmenuMode) {
       if (digit === '1') sendDigit = '31';
       else if (digit === '2') sendDigit = '32';
       else if (digit === '3') sendDigit = '33';
-      else if (digit === '*' || digit === '#') {
-        setStockSubmenuMode(false);
-        speakHindi("मुख्य मेनू पर वापस आ गए हैं। मंडी भाव के लिए 1 दबाएं, पूलिंग के लिए 2 दबाएं, स्टॉक के लिए 3 दबाएं।");
-        return;
-      }
     }
 
     setLoading(true);
@@ -291,10 +298,24 @@ export default function CallSimulator() {
         speakHindi(data.voice_prompt_hi, data.audio_base64);
       }
 
-      if (sendDigit === '2') {
+      if (sendDigit === '1' || (sendDigit.startsWith('1') && sendDigit.length === 2)) {
+        setActiveSubmenu('MANDI');
+        setMandiPriceData(data.price_data);
+      } else if (sendDigit === '2') {
+        setActiveSubmenu('CROP');
+        setPoolJoined(true);
+        setDualAlertDispatched(true);
+      } else if (['21', '22', '23', '24', '25'].includes(sendDigit)) {
+        setChosenCropCode(sendDigit);
+        setActiveSubmenu('BAG');
+        setPoolJoined(true);
+        setDualAlertDispatched(true);
+      } else if (sendDigit.length === 3 && sendDigit.startsWith('2')) {
+        setActiveSubmenu('CONFIRMED');
         setPoolJoined(true);
         setDualAlertDispatched(true);
       } else if (sendDigit === '3') {
+        setActiveSubmenu('STOCK');
         setStockSubmenuMode(true);
         setUserStockLots(data.user_lots || []);
       } else if (sendDigit === '31' || sendDigit === '32') {
@@ -305,8 +326,12 @@ export default function CallSimulator() {
       } else if (sendDigit === '33') {
         setDualAlertDispatched(true);
         setUserStockLots([]);
-      } else if (sendDigit === '4' || data.status === 'TUBEWELL_ADVISORY') {
+      } else if (sendDigit === '4' || (sendDigit.startsWith('4') && sendDigit.length === 2) || data.status === 'TUBEWELL_ADVISORY') {
+        setActiveSubmenu('TUBEWELL');
         setTubewellData(data.advisory);
+      } else if (sendDigit === '5') {
+        setActiveSubmenu('TRUCK');
+        setTruckData(data.pool);
       }
     } catch (err) {
       console.error('Call simulator keypad error:', err);
@@ -497,6 +522,152 @@ export default function CallSimulator() {
           </div>
         )}
 
+        {/* Key 1 Mandi Rates Multi-Crop Submenu Panel */}
+        {callActive && activeSubmenu === 'MANDI' && (
+          <div className="p-4 bg-amber-500/10 border border-amber-500/40 rounded-2xl space-y-3 animate-fade-in text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-amber-500 dark:text-amber-400 font-bold">
+                <Sparkles className="w-4 h-4" />
+                <span>IVR Key 1: Mandi Rates Submenu (आज़ादपुर APMC भाव)</span>
+              </div>
+              <button
+                onClick={() => setActiveSubmenu('MAIN')}
+                className="text-[10px] text-muted-fg hover:text-foreground font-mono bg-secondary px-2 py-0.5 rounded border border-border"
+              >
+                Press * for Main Menu
+              </button>
+            </div>
+            <p className="text-muted-fg text-[11px]">
+              फसल का चयन करें या कीपैड 11–15 दबाएं:
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                { digit: '11', label: '🟡 सरसों (Mustard)' },
+                { digit: '12', label: '🌾 गेहूँ (Wheat)' },
+                { digit: '13', label: '🥔 आलू (Potato)' },
+                { digit: '14', label: '🌾 धान (Paddy)' },
+                { digit: '15', label: '🌱 चना (Gram)' },
+              ].map(opt => (
+                <button
+                  key={opt.digit}
+                  onClick={() => handleKeypadPress(opt.digit)}
+                  className="p-2.5 bg-card hover:bg-amber-500/20 border border-border hover:border-amber-500/50 rounded-xl text-left font-bold transition flex items-center justify-between active:scale-95 cursor-pointer"
+                >
+                  <span className="text-foreground text-[11px]">{opt.label}</span>
+                  <span className="font-mono text-amber-500 dark:text-amber-400 text-[10px] px-1.5 py-0.5 rounded bg-secondary">
+                    Key {opt.digit}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Key 2 Crop Selection Submenu Panel */}
+        {callActive && activeSubmenu === 'CROP' && (
+          <div className="p-4 bg-primary/10 border border-primary/40 rounded-2xl space-y-3 animate-fade-in text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-primary font-bold">
+                <Package className="w-4 h-4" />
+                <span>IVR Key 2: Select Crop Variety (फसल चुनें)</span>
+              </div>
+              <button
+                onClick={() => setActiveSubmenu('MAIN')}
+                className="text-[10px] text-muted-fg hover:text-foreground font-mono bg-secondary px-2 py-0.5 rounded border border-border"
+              >
+                Press * for Main Menu
+              </button>
+            </div>
+            <p className="text-muted-fg text-[11px]">
+              गाड़ी पूलिंग के लिए फसल चुनें (कीपैड 21–25 दबाएं):
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {[
+                { digit: '21', label: '🟡 सरसों (Mustard)' },
+                { digit: '22', label: '🌾 गेहूँ (Wheat)' },
+                { digit: '23', label: '🌾 धान (Paddy)' },
+                { digit: '24', label: '🥔 आलू (Potato)' },
+                { digit: '25', label: '🌱 चना (Gram)' },
+              ].map(opt => (
+                <button
+                  key={opt.digit}
+                  onClick={() => handleKeypadPress(opt.digit)}
+                  className="p-2.5 bg-card hover:bg-primary/20 border border-border hover:border-primary/50 rounded-xl text-left font-bold transition flex items-center justify-between active:scale-95 cursor-pointer"
+                >
+                  <span className="text-foreground text-[11px]">{opt.label}</span>
+                  <span className="font-mono text-primary text-[10px] px-1.5 py-0.5 rounded bg-secondary">
+                    Key {opt.digit}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Key 2 Bag Selection Submenu Panel */}
+        {callActive && activeSubmenu === 'BAG' && (
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/40 rounded-2xl space-y-3 animate-fade-in text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold">
+                <Package className="w-4 h-4" />
+                <span>IVR Key 2: Select 50kg Bags (बोरी संख्या चुनें)</span>
+              </div>
+              <button
+                onClick={() => setActiveSubmenu('CROP')}
+                className="text-[10px] text-muted-fg hover:text-foreground font-mono bg-secondary px-2 py-0.5 rounded border border-border cursor-pointer"
+              >
+                Press 2 to Change Crop
+              </button>
+            </div>
+            <p className="text-muted-fg text-[11px]">
+              गाड़ी में कितने कट्टे / बोरी लोड कराने हैं चुनें:
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {[
+                { code: '1', label: '5 बोरी (2.5 Qtl)' },
+                { code: '2', label: '10 बोरी (5.0 Qtl)' },
+                { code: '3', label: '20 बोरी (10.0 Qtl)' },
+                { code: '4', label: '30 बोरी (15.0 Qtl)' },
+              ].map(opt => (
+                <button
+                  key={opt.code}
+                  onClick={() => handleKeypadPress(`${chosenCropCode}${opt.code}`)}
+                  className="p-2.5 bg-card hover:bg-emerald-500/20 border border-border hover:border-emerald-500/50 rounded-xl text-left font-bold transition flex flex-col justify-between active:scale-95 cursor-pointer"
+                >
+                  <span className="text-foreground text-xs">{opt.label}</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 text-[10px] mt-1">
+                    Key {chosenCropCode}{opt.code}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Key 5 Truck & Bolero Status Submenu */}
+        {callActive && activeSubmenu === 'TRUCK' && (
+          <div className="p-4 bg-blue-500/10 border border-blue-500/40 rounded-2xl space-y-3 animate-fade-in text-xs">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-blue-500 dark:text-blue-400 font-bold">
+                <Package className="w-4 h-4" />
+                <span>IVR Key 5: Bolero Truck Pickup Tracking</span>
+              </div>
+              <button
+                onClick={() => setActiveSubmenu('MAIN')}
+                className="text-[10px] text-muted-fg hover:text-foreground font-mono bg-secondary px-2 py-0.5 rounded border border-border"
+              >
+                Press * for Main Menu
+              </button>
+            </div>
+            <p className="text-foreground font-bold text-xs">
+              महिन्द्रा बोलेरो मैक्सी ट्रक (HR-12-AE-8821)
+            </p>
+            <p className="text-muted-fg text-[11px] leading-relaxed">
+              ड्राइवर: बलजीत सिंह (+91 94160 88219) • आगमन: आज दोपहर 01:30 बजे • स्थिति: 100% FULL (डिस्पैच लॉक)
+            </p>
+          </div>
+        )}
+
         {/* Key 3 Stock Management Multi-Key Interactive Panel */}
         {callActive && stockSubmenuMode && (
           <div className="p-4 bg-emerald-500/10 border border-emerald-500/40 rounded-2xl space-y-3 animate-fade-in text-xs">
@@ -648,16 +819,54 @@ export default function CallSimulator() {
         {/* DTMF Keypad Grid */}
         <div className="grid grid-cols-3 gap-2.5 max-w-[300px] mx-auto">
           {[
-            { num: '1', sub: registrationMode ? 'Bhalaut' : stockSubmenuMode ? '+1 Qtl (31)' : 'Mandi Rates' },
-            { num: '2', sub: registrationMode ? 'Kalanaur' : stockSubmenuMode ? '-1 Qtl (32)' : 'Pool Truck ⚡' },
-            { num: '3', sub: registrationMode ? 'Najafgarh' : stockSubmenuMode ? 'Delete (33)' : 'My Stock' },
-            { num: '4', sub: registrationMode ? 'Madina' : stockSubmenuMode ? '-' : 'Tubewell ⚡ (4)' },
-            { num: '5', sub: stockSubmenuMode ? '-' : 'Order Status' },
-            { num: '6', sub: stockSubmenuMode ? '-' : 'KhetPin' },
-            { num: '7', sub: stockSubmenuMode ? '-' : 'Payments' },
-            { num: '8', sub: stockSubmenuMode ? '-' : 'FPO Support' },
-            { num: '9', sub: stockSubmenuMode ? '-' : 'Language' },
-            { num: '*', sub: stockSubmenuMode ? 'Main Menu' : 'Repeat' },
+            { 
+              num: '1', 
+              sub: registrationMode ? 'Bhalaut' : 
+                   activeSubmenu === 'MANDI' ? 'सरसों (11)' : 
+                   activeSubmenu === 'CROP' ? 'सरसों (21)' : 
+                   activeSubmenu === 'BAG' ? '5 बोरी (1)' : 
+                   activeSubmenu === 'TUBEWELL' ? 'गेहूँ (41)' : 
+                   stockSubmenuMode ? '+1 Qtl (31)' : 'Mandi Rates' 
+            },
+            { 
+              num: '2', 
+              sub: registrationMode ? 'Kalanaur' : 
+                   activeSubmenu === 'MANDI' ? 'गेहूँ (12)' : 
+                   activeSubmenu === 'CROP' ? 'गेहूँ (22)' : 
+                   activeSubmenu === 'BAG' ? '10 बोरी (2)' : 
+                   activeSubmenu === 'TUBEWELL' ? 'सरसों (42)' : 
+                   stockSubmenuMode ? '-1 Qtl (32)' : 'Pool Truck ⚡' 
+            },
+            { 
+              num: '3', 
+              sub: registrationMode ? 'Najafgarh' : 
+                   activeSubmenu === 'MANDI' ? 'आलू (13)' : 
+                   activeSubmenu === 'CROP' ? 'धान (23)' : 
+                   activeSubmenu === 'BAG' ? '20 बोरी (3)' : 
+                   activeSubmenu === 'TUBEWELL' ? 'आलू (43)' : 
+                   stockSubmenuMode ? 'Delete (33)' : 'My Stock' 
+            },
+            { 
+              num: '4', 
+              sub: registrationMode ? 'Madina' : 
+                   activeSubmenu === 'MANDI' ? 'धान (14)' : 
+                   activeSubmenu === 'CROP' ? 'आलू (24)' : 
+                   activeSubmenu === 'BAG' ? '30 बोरी (4)' : 
+                   activeSubmenu === 'TUBEWELL' ? 'धान (44)' : 
+                   'Tubewell ⚡' 
+            },
+            { 
+              num: '5', 
+              sub: activeSubmenu === 'MANDI' ? 'चना (15)' : 
+                   activeSubmenu === 'CROP' ? 'चना (25)' : 
+                   activeSubmenu === 'TUBEWELL' ? 'चना (45)' : 
+                   'Bolero Status' 
+            },
+            { num: '6', sub: 'KhetPin' },
+            { num: '7', sub: 'Payments' },
+            { num: '8', sub: 'Helpline' },
+            { num: '9', sub: 'Language' },
+            { num: '*', sub: 'Main Menu' },
             { num: '0', sub: 'Operator' },
             { num: '#', sub: 'Confirm' },
           ].map((key) => (
