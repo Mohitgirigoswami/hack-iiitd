@@ -18,12 +18,12 @@
 
 ## 📁 Hackathon Submission Deliverables
 
-| Deliverable | Repository Location / Format | Details |
+| Deliverable | Access / Format | Details |
 | :--- | :--- | :--- |
-| 📊 **Presentation Deck (PPT)** | [`presentation/KhetOS_Pitch_Deck.pptx`](presentation/README.md) *(or `.pdf`)* | Slide deck covering Smallholder Agronomy Landscape, System Architecture, Discrete Bag Knapsack Engine, and Business Model. |
-| 🎥 **Video Demonstration** | Mandatory $\le$ 2-Minute Screen Share with Presenter Face / Webcam | Timed 120-second walkthrough following the strict presenter cue sheet below. |
-| 🤖 **Telegram Kisan Bot** | [`@KhetOSSaathiBot`](https://t.me/KhetOSSaathiBot) | Live Telegram interface for zero-app harvest lot listings, mandi price intelligence, and weighbridge payouts. |
-| 🧪 **E2E Test Suite (100%)** | [`tests/test_e2e_suite.py`](tests/test_e2e_suite.py) | 37 automated tests passing across 4 rigorous tiers with 100% pass rate. |
+| 🎥 **Video Demonstration** | Mandatory $\le$ 2-Minute Screen Share with Presenter Face / Webcam | Complete prototype walkthrough following the 120-second presenter cue sheet below.<br/>**Link:** `[Add Video Link Here (YouTube / Google Drive)]` |
+| 🤖 **Telegram Kisan Bot** | [`@KhetOSSaathiBot`](https://t.me/KhetOSSaathiBot) | Production-ready Telegram bot handling live harvest listings, Agmarknet rates, and weighbridge payouts. |
+| 🧪 **E2E Test Suite (100%)** | [`tests/test_e2e_suite.py`](tests/test_e2e_suite.py) | 37 automated tests passing across 4 rigorous tiers with 100% success rate. |
+| 🚚 **Seeded Production Fleet** | Single Bolero (`HR-12-AE-8419`) | Baljit Singh (`+91 94160 88219`) on `Rohtak-Kalanaur ➔ Azadpur APMC Mandi`. |
 
 ---
 
