@@ -203,12 +203,16 @@ def get_stock_management_inline(lots):
     return markup
 
 def get_crop_doctor_inline():
-    """Common symptoms for instant 1-tap ICAR diagnosis."""
+    """Common symptoms and pests for instant 1-tap ICAR diagnosis."""
     markup = telebot.types.InlineKeyboardMarkup(row_width=1)
     markup.add(
+        telebot.types.InlineKeyboardButton("🌿 सरसों — माहू / चेपा कीट (Aphids)", callback_data="doctor_select:Mustard:Aphids / Mahu"),
         telebot.types.InlineKeyboardButton("🌿 सरसों — सफेद रतुआ (White Rust)", callback_data="doctor_select:Mustard:White Rust"),
         telebot.types.InlineKeyboardButton("🌾 गेहूँ — पीला रतुआ (Yellow Rust)", callback_data="doctor_select:Wheat:Yellow Rust"),
-        telebot.types.InlineKeyboardButton("🥔 आलू — पछेती झुलसा (Late Blight)", callback_data="doctor_select:Potato:Late Blight")
+        telebot.types.InlineKeyboardButton("🌾 गेहूँ — दीमक नियंत्रण (Termites)", callback_data="doctor_select:Wheat:Termites"),
+        telebot.types.InlineKeyboardButton("🥔 आलू — पिछेता झुलसा (Late Blight)", callback_data="doctor_select:Potato:Late Blight"),
+        telebot.types.InlineKeyboardButton("🌾 धान — तना छेदक कीट (Stem Borer)", callback_data="doctor_select:Paddy:Stem Borer"),
+        telebot.types.InlineKeyboardButton("🌱 चना — फली छेदक इल्ली (Pod Borer)", callback_data="doctor_select:Gram:Pod Borer")
     )
     return markup
 
@@ -413,6 +417,8 @@ def init_telegram_bot(token=None):
         # Create lot in SQLite database
         lot = create_lot(phone, crop, qty, channel="telegram_bot")
         pool = get_active_pool() or state.active_pool
+        cap_pct = pool.get('capacity_percentage', 80.0)
+        status_label = "डिस्पैच लॉक (100% Full)" if cap_pct >= 99 else "पूलिंग जारी (Accepting Lots)"
 
         reply_text = (
             f"✅ *बधाई! आपकी फसल पूलिंग में दर्ज हो गई है!*\n"
@@ -420,13 +426,14 @@ def init_telegram_bot(token=None):
             f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
             f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
             f"🚚 *गाड़ी:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')}\n"
-            f"📊 *बोलेरो क्षमता:* *{pool.get('capacity_percentage', 100)}% FULL* ({pool.get('status', 'FULL_DISPATCH_LOCKED')})\n"
+            f"⏱️ *पिकअप स्लॉट:* कल सुबह 08:45 - 09:15 बजे (एग्री मिल्क-रन)\n"
+            f"📊 *बोलेरो क्षमता:* *{cap_pct}%* ({status_label})\n"
             f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
-            f"🎉 *डैशबोर्ड पर आपकी गाड़ी 100% फुल हो गई है!*"
+            f"📍 *कट-ऑफ:* आज शाम 6:00 बजे | *रूट प्रस्थान:* कल सुबह 07:00 बजे रोहतक हब से"
         )
         bot.reply_to(message, reply_text, parse_mode="Markdown", reply_markup=get_post_lot_inline(lot['lot_id'], crop))
 
-        spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। बोलेरो गाड़ी {pool.get('capacity_percentage', 100)}% भर चुकी है।"
+        spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे निर्धारित है।"
         dispatch_voice_safe(bot, message.chat.id, spoken)
 
     # 6. /dellot command handler
@@ -544,6 +551,125 @@ def init_telegram_bot(token=None):
         )
         bot.reply_to(message, reply, parse_mode="Markdown", reply_markup=get_main_reply_keyboard())
 
+    # 9B. Voice & Audio note handler (Real multimodal speech & dialect parsing)
+    @bot.message_handler(content_types=['voice', 'audio'])
+    def handle_voice_message(message):
+        bot.reply_to(message, "🎙️ आपकी आवाज़ सुनी जा रही है... कृपया 1 सेकंड प्रतीक्षा करें।")
+        try:
+            # 1. Download voice note file from Telegram
+            file_id = message.voice.file_id if message.voice else message.audio.file_id
+            file_info = bot.get_file(file_id)
+            audio_bytes = bot.download_file(file_info.file_path)
+
+            # 2. Parse vernacular speech
+            parsed = parse_voice_dialect_intent(audio_bytes, mime_type="audio/ogg")
+            intent = parsed.get("intent", "CROP_LOT")
+            crop = parsed.get("crop", "Mustard")
+            transcript = parsed.get("transcription", "")
+            user = resolve_farmer(message)
+            phone = user.get("phone", "+91 98123 45099")
+            chat_id = message.chat.id
+
+            # Route by intent
+            if intent == "TUBEWELL":
+                res = calculate_tubewell_runtime(crop=crop, village=user.get("village", "Bhalaut"))
+                reply_text = (
+                    f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+                    f"🚿 *{res['crop_hindi']} - आज का ट्यूबवेल सुझाव*\n"
+                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"⏱️ *सुझाव:* *{res['headline_hi']}*\n"
+                    f"💡 *कारण:* {res['reason_hi']}\n"
+                    f"⚡ *कृषि 3-फेज बिजली:* {res['power_roster']['active_slot']}\n"
+                    f"🌱 *बचत:* ~{res['groundwater_saved_liters']:,}L भूजल व {res['electricity_units_saved_kwh']} यूनिट बिजली की बचत!"
+                )
+                bot.send_message(chat_id, reply_text, parse_mode="Markdown", reply_markup=get_tubewell_post_inline(crop))
+                dispatch_voice_safe(bot, chat_id, res["voice_text_hi"])
+
+            elif intent == "MANDI":
+                prices = get_current_mandi_prices()
+                crop_prices = [p for p in prices if crop.lower() in p["crop"].lower() or p["crop"].lower() in crop.lower()]
+                p_item = crop_prices[0] if crop_prices else prices[0]
+                reply_text = (
+                    f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+                    f"📈 *आज का {p_item['crop']} मंडी भाव*\n"
+                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"🏛️ *आज़ादपुर APMC मंडी:* ₹{p_item['benchmark_mandi_price_rs']}/क्विंटल\n"
+                    f"🏘️ *गांव का स्थानीय आढ़ती:* ₹{p_item['local_trader_price_rs']}/क्विंटल\n"
+                    f"💰 *KhetOS से सीधा मुनाफा:* *+₹{p_item['extra_profit_per_quintal_rs']}/क्विंटल*\n"
+                    f"🛡️ *शून्य पेनाल्टी पूलिंग:* सीधे खेत से महिंद्रा बोलेरो पिकअप!"
+                )
+                bot.send_message(chat_id, reply_text, parse_mode="Markdown", reply_markup=get_post_lot_inline("POOL-ROH-104", crop))
+                spoken = f"आज {p_item['crop']} का आज़ादपुर मंडी भाव ₹{p_item['benchmark_mandi_price_rs']} है। खेतOS से आपको प्रति क्विंटल ₹{p_item['extra_profit_per_quintal_rs']} का सीधा अतिरिक्त मुनाफा होगा।"
+                dispatch_voice_safe(bot, chat_id, spoken)
+
+            elif intent == "PESTICIDE_DOCTOR":
+                disease_query = parsed.get("pest_or_disease") or "Aphids / Mahu"
+                presc = get_prescription(crop=crop, disease=disease_query)
+                hindi_reply = (
+                    f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+                    f"🌿 *ICAR AI फसल डॉक्टर व कीटनाशक सलाह*\n"
+                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"🌾 *फसल:* {crop}\n"
+                    f"🦠 *कीट/बीमारी:* *{presc['disease_name']}*\n"
+                    f"🧪 *असली टेक्निकल साल्ट:* `{presc['chemical_salt']}`\n"
+                    f"⚖️ *15L ढोलकी नाप:* *{presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}*\n"
+                    f"💰 *खर्च:* जेनेरिक {presc.get('generic_price', '₹180')} vs ब्रांडेड {presc.get('brand_price', '₹850')} (*~{presc.get('savings_pct', 75)}% बचत*)\n"
+                    f"🌱 *जैविक विकल्प:* {presc.get('organic_alternative_hi', 'नीम का तेल')}\n\n"
+                    f"⚠️ *सुरक्षा चेतावनी:* {presc['warning_hi']}"
+                )
+                bot.send_message(chat_id, hindi_reply, parse_mode="Markdown", reply_markup=get_crop_doctor_inline())
+                spoken_summary = f"{crop} में {presc['disease_name']} के लिए दुकानदार से {presc['chemical_salt']} मांगें। {presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}। {presc['warning_hi']}"
+                dispatch_voice_safe(bot, chat_id, spoken_summary)
+
+            elif intent == "TRUCK_TRACKING":
+                pool = get_active_pool() or state.active_pool
+                truck_text = (
+                    f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+                    f"🚛 *महिंद्रा बोलेरो - कृषि मिल्क-रन शेड्यूल*\n"
+                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"🚚 *गाड़ी:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8419)\n"
+                    f"👤 *ड्राइवर:* बलजीत सिंह (+91 94160 88219)\n"
+                    f"⏱️ *कट-ऑफ विंडो:* आज शाम 6:00 बजे तक\n"
+                    f"🛣️ *शेड्यूल रूट व समय:*\n"
+                    f"  1. दिनेश छिल्लर (कल सुबह 07:15 - 07:45 AM)\n"
+                    f"  2. सुरेश कुमार (कल सुबह 08:00 - 08:30 AM)\n"
+                    f"  3. आपका खेत (कल सुबह 08:45 - 09:15 AM)\n"
+                    f"  ➔ आज़ादपुर APMC मंडी आगमन: कल सुबह 10:45 AM\n\n"
+                    f"📊 *पूलिंग स्थिति:* {pool.get('capacity_percentage', 73.3)}% क्षमता"
+                )
+                bot.send_message(chat_id, truck_text, parse_mode="Markdown", reply_markup=get_truck_status_inline())
+                spoken = f"बोलेरो गाड़ी का रूट कल सुबह 7 बजे शुरू होगा। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे निर्धारित है।"
+                dispatch_voice_safe(bot, chat_id, spoken)
+
+            else:
+                # Default: CROP_LOT
+                bags = parsed.get("bags_count", 8)
+                qty = parsed.get("quantity_quintals", round(bags * 0.5, 1))
+                lot = create_lot(phone, crop, qty, channel="telegram_voice")
+                pool = get_active_pool() or state.active_pool
+                cap_pct = pool.get('capacity_percentage', 80.0)
+                status_label = "डिस्पैच लॉक (100% Full)" if cap_pct >= 99 else "पूलिंग जारी (Accepting Lots)"
+
+                reply_text = (
+                    f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+                    f"✅ *बधाई! आपकी फसल पूलिंग में दर्ज हो गई है!*\n"
+                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
+                    f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
+                    f"🚚 *गाड़ी:* Mahindra Bolero Maxi Truck (HR-12-AE-8419)\n"
+                    f"⏱️ *पिकअप स्लॉट:* कल सुबह 08:45 - 09:15 बजे (एग्री मिल्क-रन)\n"
+                    f"📊 *बोलेरो लोड:* {cap_pct}% ({status_label})\n"
+                    f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
+                    f"📍 *कट-ऑफ:* आज शाम 6:00 बजे | *रूट प्रस्थान:* कल सुबह 07:00 बजे"
+                )
+                bot.reply_to(message, reply_text, parse_mode="Markdown", reply_markup=get_post_lot_inline(lot['lot_id'], crop))
+                spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे है।"
+                dispatch_voice_safe(bot, chat_id, spoken)
+
+        except Exception as e:
+            print(f"[Telegram Bot Error] Voice handling failed: {e}")
+            bot.reply_to(message, "⚠️ आवाज़ समझने में कठिनाई हुई। कृपया पुनः स्पष्ट बोलें या नीचे दिए मेन्यू विकल्पों का उपयोग करें।", reply_markup=get_main_reply_keyboard())
+
     # 10. Photo handler (ICAR leaf disease vision diagnosis)
     @bot.message_handler(content_types=['photo'])
     def handle_photo(message):
@@ -560,15 +686,16 @@ def init_telegram_bot(token=None):
                 f"🌿 *फसल रोग जांच रिपोर्ट (ICAR AI Doctor)*\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"🌾 *फसल:* {crop_detected}\n"
-                f"🦠 *बीमारी:* {presc['disease_name']}\n"
+                f"🦠 *बीमारी/कीट:* *{presc['disease_name']}*\n"
                 f"🧪 *असली टेक्निकल साल्ट:* `{presc['chemical_salt']}`\n"
-                f"⚖️ *नाप (Dosage):* {presc['dosage_hi']}\n"
-                f"💰 *अनुमानित खर्च:* {presc.get('estimated_price', '₹180 - ₹240')} (80% बचत)\n\n"
-                f"⚠️ *चेतावनी:* {presc['warning_hi']}"
+                f"⚖️ *15L ढोलकी नाप:* *{presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}*\n"
+                f"💰 *खर्च:* जेनेरिक {presc.get('generic_price', '₹180')} vs ब्रांडेड {presc.get('brand_price', '₹850')} (*~{presc.get('savings_pct', 75)}% बचत*)\n"
+                f"🌱 *जैविक विकल्प:* {presc.get('organic_alternative_hi', 'नीम का तेल')}\n\n"
+                f"⚠️ *सुरक्षा चेतावनी:* {presc['warning_hi']}"
             )
-            bot.reply_to(message, hindi_reply, parse_mode="Markdown")
+            bot.reply_to(message, hindi_reply, parse_mode="Markdown", reply_markup=get_crop_doctor_inline())
 
-            spoken_summary = f"आपकी {crop_detected} की फसल में {presc['disease_name']} है। दुकानदार से {presc['chemical_salt']} मांगें। {presc['warning_hi']}"
+            spoken_summary = f"आपकी {crop_detected} की फसल में {presc['disease_name']} है। दुकानदार से {presc['chemical_salt']} मांगें। {presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}। {presc['warning_hi']}"
             dispatch_voice_safe(bot, message.chat.id, spoken_summary)
         except Exception as e:
             print(f"[Telegram Bot Error] Photo processing error: {e}")
@@ -602,13 +729,17 @@ def init_telegram_bot(token=None):
         elif "गाड़ी" in text or "ट्रक" in text or "truck" in t_lower or "पिकअप" in text:
             pool = get_active_pool() or state.active_pool
             truck_text = (
-                f"🚛 *बोलेरो पिकअप ट्रैकिंग*\n"
+                f"🚛 *महिंद्रा बोलेरो - कृषि मिल्क-रन ट्रैकिंग*\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
-                f"🚚 *वाहन:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8821)\n"
+                f"🚚 *वाहन:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8419)\n"
                 f"👤 *ड्राइवर:* बलजीत सिंह (+91 94160 88219)\n"
-                f"🛣️ *रूट:* भलौट ➔ रोहतक ➔ आज़ादपुर APMC मंडी\n"
-                f"📊 *बोलेरो लोड:* {pool.get('capacity_percentage', 100)}% ({pool.get('status', 'ACCEPTING_LOTS')})\n"
-                f"⏱️ *अनुमानित आगमन:* आज दोपहर 01:30 बजे"
+                f"⏱️ *कट-ऑफ विंडो:* आज शाम 6:00 बजे | *प्रस्थान:* कल सुबह 07:00 बजे\n"
+                f"🛣️ *मिल्क-रन रूट टाइमलाइन:*\n"
+                f"  1. दिनेश छिल्लर (कल सुबह 07:15 - 07:45 AM)\n"
+                f"  2. सुरेश कुमार (कल सुबह 08:00 - 08:30 AM)\n"
+                f"  3. आपका खेत (कल सुबह 08:45 - 09:15 AM)\n"
+                f"  ➔ आज़ादपुर APMC मंडी: कल सुबह 10:45 AM\n\n"
+                f"📊 *बोलेरो लोड:* {pool.get('capacity_percentage', 73.3)}% ({pool.get('status', 'ACCEPTING_LOTS')})"
             )
             return bot.reply_to(message, truck_text, parse_mode="Markdown", reply_markup=get_truck_status_inline())
 
@@ -752,17 +883,18 @@ def init_telegram_bot(token=None):
             _, crop, disease = data.split(":")
             presc = get_prescription(crop=crop, disease=disease)
             hindi_reply = (
-                f"🌿 *ICAR AI फसल डॉक्टर रिपोर्ट*\n"
+                f"🌿 *ICAR AI फसल डॉक्टर व कीटनाशक सलाह*\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"🌾 *फसल:* {crop}\n"
-                f"🦠 *बीमारी:* {presc['disease_name']}\n"
+                f"🦠 *बीमारी/कीट:* *{presc['disease_name']}*\n"
                 f"🧪 *असली टेक्निकल साल्ट:* `{presc['chemical_salt']}`\n"
-                f"⚖️ *नाप (Dosage):* {presc['dosage_hi']}\n"
-                f"💰 *अनुमानित खर्च:* {presc.get('estimated_price', '₹180 - ₹240')} (80% बचत)\n\n"
-                f"⚠️ *चेतावनी:* {presc['warning_hi']}"
+                f"⚖️ *15L ढोलकी नाप:* *{presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}*\n"
+                f"💰 *अनुमानित खर्च:* जेनेरिक {presc.get('generic_price', '₹180')} vs ब्रांडेड {presc.get('brand_price', '₹850')} (*~{presc.get('savings_pct', 75)}% बचत*)\n"
+                f"🌱 *जैविक विकल्प:* {presc.get('organic_alternative_hi', 'नीम का तेल')}\n\n"
+                f"⚠️ *सुरक्षा चेतावनी:* {presc['warning_hi']}"
             )
             bot.send_message(chat_id, hindi_reply, parse_mode="Markdown", reply_markup=get_crop_doctor_inline())
-            spoken_summary = f"{crop} की फसल में {presc['disease_name']} के लिए दुकानदार से {presc['chemical_salt']} मांगें। {presc['warning_hi']}"
+            spoken_summary = f"{crop} में {presc['disease_name']} के लिए दुकानदार से {presc['chemical_salt']} मांगें। {presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}। {presc['warning_hi']}"
             dispatch_voice_safe(bot, chat_id, spoken_summary)
 
         # Flow H: Restart submenus
@@ -782,11 +914,17 @@ def init_telegram_bot(token=None):
         elif data == "show_truck_status":
             pool = get_active_pool() or state.active_pool
             truck_text = (
-                f"🚛 *बोलेरो पिकअप ट्रैकिंग*\n"
+                f"🚛 *महिंद्रा बोलेरो - कृषि मिल्क-रन ट्रैकिंग*\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
-                f"🚚 *वाहन:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8821)\n"
+                f"🚚 *वाहन:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8419)\n"
                 f"👤 *ड्राइवर:* बलजीत सिंह (+91 94160 88219)\n"
-                f"📊 *बोलेरो लोड:* {pool.get('capacity_percentage', 100)}% ({pool.get('status', 'ACCEPTING_LOTS')})"
+                f"⏱️ *कट-ऑफ विंडो:* आज शाम 6:00 बजे | *प्रस्थान:* कल सुबह 07:00 बजे\n"
+                f"🛣️ *मिल्क-रन रूट टाइमलाइन:*\n"
+                f"  1. दिनेश छिल्लर (कल सुबह 07:15 - 07:45 AM)\n"
+                f"  2. सुरेश कुमार (कल सुबह 08:00 - 08:30 AM)\n"
+                f"  3. आपका खेत (कल सुबह 08:45 - 09:15 AM)\n"
+                f"  ➔ आज़ादपुर APMC मंडी: कल सुबह 10:45 AM\n\n"
+                f"📊 *बोलेरो लोड:* {pool.get('capacity_percentage', 73.3)}% ({pool.get('status', 'ACCEPTING_LOTS')})"
             )
             bot.send_message(chat_id, truck_text, parse_mode="Markdown", reply_markup=get_truck_status_inline())
 

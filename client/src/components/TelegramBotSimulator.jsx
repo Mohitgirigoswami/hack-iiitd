@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Send, Bot, User, Volume2, ShieldCheck, Sparkles, RefreshCw, 
   CheckCircle2, XCircle, ChevronRight, CornerDownLeft, MessageSquare,
-  Camera, Image, Upload, X, Droplets
+  Camera, Image, Upload, X, Droplets, Mic, MicOff, Radio
 } from 'lucide-react';
 import { useRole } from '../context/RoleContext';
 
@@ -30,6 +30,12 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
   const [loading, setLoading] = useState(false);
   const [playingAudioIdx, setPlayingAudioIdx] = useState(null);
   const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showVoiceModal, setShowVoiceModal] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const recordingTimerRef = useRef(null);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -120,6 +126,107 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
     } catch (e) {
       console.warn("Audio play error:", e);
       setPlayingAudioIdx(null);
+    }
+  };
+
+  const handleSendVoice = async (spokenTranscript, audioB64 = null) => {
+    setShowVoiceModal(false);
+    if (isRecording) stopRecording(false);
+
+    const userMsg = {
+      id: Date.now(),
+      sender: 'user',
+      isVoice: true,
+      text: `🎙️ "${spokenTranscript}"`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/voice/process', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          phone: currentPhone,
+          text: spokenTranscript,
+          audio_base64: audioB64
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      const botMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: data.reply || 'आवाज़ नोट प्रोसेस हो गया है।',
+        audio_base64: data.audio_base64,
+        options: data.options || [],
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, botMsg]);
+
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Voice processing error:', err);
+      const errMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: '⚠️ आवाज़ समझने में कठिनाई हुई। कृपया दोबारा बोलें या नीचे दिए विकल्पों का उपयोग करें।',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      audioChunksRef.current = [];
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+          const base64Data = reader.result.split(',')[1];
+          handleSendVoice('माइक्रोफोन रिकॉर्डिंग', base64Data);
+        };
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds(s => s + 1);
+      }, 1000);
+    } catch (err) {
+      console.warn('Microphone access unavailable, using vernacular speech presets:', err);
+      handleSendVoice('20 बोरी गेहूं मंडी भेजनी है');
+    }
+  };
+
+  const stopRecording = (shouldProcess = true) => {
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    setIsRecording(false);
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      if (shouldProcess) {
+        mediaRecorderRef.current.stop();
+      } else {
+        mediaRecorderRef.current.stream.getTracks().forEach(t => t.stop());
+      }
     }
   };
 
@@ -403,10 +510,140 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
         </div>
       )}
 
+      {/* Voice Note Simulator Modal Drawer */}
+      {showVoiceModal && (
+        <div className="p-3 bg-[#1d2733] border-t border-[#293a4c] space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center justify-between pb-1.5 border-b border-[#293a4c]">
+            <span className="text-xs font-bold text-white flex items-center gap-1.5">
+              <Mic className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+              <span>आवाज़ संदेश व क्षेत्रीय बोली (Vernacular Voice Note)</span>
+            </span>
+            <button
+              onClick={() => {
+                if (isRecording) stopRecording(false);
+                setShowVoiceModal(false);
+              }}
+              className="p-1 rounded text-[#708499] hover:text-white"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Real Mic Recorder */}
+          <div className="p-3 bg-[#17212b] rounded-xl border border-[#2b3d52] flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={isRecording ? () => stopRecording(true) : startRecording}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition active:scale-95 shadow-md ${
+                  isRecording 
+                    ? 'bg-rose-600 text-white animate-pulse ring-4 ring-rose-500/30'
+                    : 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                }`}
+              >
+                {isRecording ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+              <div>
+                <span className="text-xs font-bold text-white block">
+                  {isRecording ? `रिकॉर्डिंग जारी है (00:0${recordingSeconds})` : 'माइक पर बोलें (Tap to Speak)'}
+                </span>
+                <span className="text-[10px] text-[#8fa7be]">
+                  {isRecording ? 'बोलने के बाद दोबारा टैप करें...' : 'हिंदी, हरियाणवी या ग्रामीण बोली में बोलें'}
+                </span>
+              </div>
+            </div>
+            {isRecording && (
+              <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse">
+                REC ●
+              </span>
+            )}
+          </div>
+
+          <p className="text-[10px] text-[#8fa7be] font-semibold">
+            या बिना माइक के तुरंत किसान आवाज़ संदेश भेजें:
+          </p>
+
+          {/* Spoken Vernacular Presets across 5 domains */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+            <button
+              onClick={() => handleSendVoice('20 बोरी गेहूं मंडी भेजनी है')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-emerald-500/50 rounded-xl text-left transition flex items-center justify-between"
+            >
+              <div>
+                <span className="text-[11px] font-bold text-white block">🌾 "20 बोरी गेहूं मंडी भेजनी है"</span>
+                <span className="text-[9px] text-emerald-400">लॉट बुकिंग (20 Bags Wheat)</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-fg shrink-0" />
+            </button>
+
+            <button
+              onClick={() => handleSendVoice('आज ट्यूबवेल कितनी देर चलाना है?')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-sky-500/50 rounded-xl text-left transition flex items-center justify-between"
+            >
+              <div>
+                <span className="text-[11px] font-bold text-white block">🚿 "आज ट्यूबवेल कितनी देर चलाना है?"</span>
+                <span className="text-[9px] text-sky-400">सिंचाई व 3-फेज बिजली सलाह</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-fg shrink-0" />
+            </button>
+
+            <button
+              onClick={() => handleSendVoice('सरसों का क्या भाव है आजादपुर में?')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-amber-500/50 rounded-xl text-left transition flex items-center justify-between"
+            >
+              <div>
+                <span className="text-[11px] font-bold text-white block">📈 "सरसों का क्या भाव है आजादपुर में?"</span>
+                <span className="text-[9px] text-amber-400">APMC बनाम आढ़ती भाव</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-fg shrink-0" />
+            </button>
+
+            <button
+              onClick={() => handleSendVoice('सरसों में चेपा कीट लगा है, क्या दवा डालें?')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-rose-500/50 rounded-xl text-left transition flex items-center justify-between"
+            >
+              <div>
+                <span className="text-[11px] font-bold text-white block">🌿 "सरसों में चेपा कीट लगा है दवा बताओ"</span>
+                <span className="text-[9px] text-rose-400">ICAR डॉक्टर (15L ढोलकी नाप)</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-fg shrink-0" />
+            </button>
+
+            <button
+              onClick={() => handleSendVoice('गाड़ी पिकअप के लिए कब पहुंचेगी?')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-purple-500/50 rounded-xl text-left transition flex items-center justify-between sm:col-span-2"
+            >
+              <div>
+                <span className="text-[11px] font-bold text-white block">🚛 "गाड़ी पिकअप के लिए कब पहुंचेगी?"</span>
+                <span className="text-[9px] text-purple-400">मिल्क-रन शेड्यूल व पिकअप स्लॉट (08:45 AM)</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 text-muted-fg shrink-0" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Input Message Bar */}
       <div className="p-2.5 bg-[#17212b] border-t border-[#0e1621] flex items-center gap-2">
         <button
-          onClick={() => setShowPhotoModal(!showPhotoModal)}
+          onClick={() => {
+            setShowVoiceModal(!showVoiceModal);
+            setShowPhotoModal(false);
+          }}
+          title="आवाज़ नोट भेजें (Voice Note / Regional Dialect)"
+          className={`p-2 border rounded-xl transition cursor-pointer ${
+            showVoiceModal || isRecording
+              ? 'bg-emerald-600 text-white border-emerald-500 ring-2 ring-emerald-500/30'
+              : 'bg-[#242f3d] hover:bg-[#2f3d4f] text-emerald-400 border-[#324357]'
+          }`}
+        >
+          <Mic className="w-4 h-4" />
+        </button>
+
+        <button
+          onClick={() => {
+            setShowPhotoModal(!showPhotoModal);
+            setShowVoiceModal(false);
+          }}
           title="पत्ती की फोटो भेजें (Crop Leaf Disease Scanner)"
           className={`p-2 border rounded-xl transition cursor-pointer ${
             showPhotoModal
@@ -416,12 +653,13 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
         >
           <Camera className="w-4 h-4" />
         </button>
+
         <input
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSendCommand()}
-          placeholder="Type message or command (/tubewell, /mandi, /addlot)..."
+          placeholder="बोलें या टाइप करें (/tubewell, /mandi, 20 बोरी गेहूं)..."
           disabled={loading}
           className="flex-1 bg-[#242f3d] border border-[#324357] rounded-xl px-3.5 py-2 text-xs text-white placeholder-[#708499] focus:outline-none focus:border-emerald-500 font-sans"
         />

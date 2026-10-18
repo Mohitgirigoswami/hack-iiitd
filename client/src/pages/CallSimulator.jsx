@@ -650,7 +650,7 @@ export default function CallSimulator() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-blue-500 dark:text-blue-400 font-bold">
                 <Package className="w-4 h-4" />
-                <span>IVR Key 5: Bolero Truck Pickup Tracking</span>
+                <span>IVR Key 5: Scheduled Milk-Run Pickup Tracking</span>
               </div>
               <button
                 onClick={() => setActiveSubmenu('MAIN')}
@@ -659,12 +659,25 @@ export default function CallSimulator() {
                 Press * for Main Menu
               </button>
             </div>
-            <p className="text-foreground font-bold text-xs">
-              महिन्द्रा बोलेरो मैक्सी ट्रक (HR-12-AE-8821)
-            </p>
-            <p className="text-muted-fg text-[11px] leading-relaxed">
-              ड्राइवर: बलजीत सिंह (+91 94160 88219) • आगमन: आज दोपहर 01:30 बजे • स्थिति: 100% FULL (डिस्पैच लॉक)
-            </p>
+            <div>
+              <p className="text-foreground font-bold text-xs">
+                महिन्द्रा बोलेरो मैक्सी ट्रक (HR-12-AE-8419) • ड्राइवर: बलजीत सिंह (+91 94160 88219)
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-2 text-[11px]">
+                <div className="p-2 rounded-lg bg-card/60 border border-border">
+                  <span className="text-muted-fg block text-[10px]">पूलिंग स्थिति</span>
+                  <span className="font-semibold text-emerald-500">पूलिंग जारी है (कट-ऑफ शाम 6:00 बजे)</span>
+                </div>
+                <div className="p-2 rounded-lg bg-card/60 border border-border">
+                  <span className="text-muted-fg block text-[10px]">रवाना समय</span>
+                  <span className="font-semibold text-foreground">कल सुबह 07:00 बजे</span>
+                </div>
+                <div className="p-2 rounded-lg bg-blue-500/10 border border-blue-500/30 col-span-2">
+                  <span className="text-blue-400 block text-[10px] font-bold">रामू शर्मा - पिकअप स्लॉट (स्टॉप #3)</span>
+                  <span className="font-bold text-foreground">कल सुबह 08:45 AM - 09:15 AM (Village Bhalaut PACS)</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

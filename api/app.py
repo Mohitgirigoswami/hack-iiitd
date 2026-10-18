@@ -8,7 +8,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 
 from core.mandi_prices import get_mandi_price
-from core.advisory import get_prescription, generate_hindi_audio
+from core.advisory import get_prescription, generate_hindi_audio, get_crop_diseases_catalog
 from core.khetpin import generate_khet_pin
 from core.pooling import match_buyer_order, calculate_freight_split
 from core.ai_client import parse_voice_dialect_intent, analyze_crop_leaf_disease
@@ -19,7 +19,8 @@ from core.database import (
     update_lot_status, delete_lot, get_backhaul_schedules, create_backhaul_schedule,
     get_notifications, add_activity, register_driver, register_buyer,
     verify_user_credentials, get_all_drivers, get_all_buyers,
-    get_stakeholders_directory, schedule_backhaul_date_db, get_connection
+    get_stakeholders_directory, schedule_backhaul_date_db, get_connection,
+    get_active_pool, recalculate_active_pool
 )
 from core.notifications import send_dual_channel_alert, link_telegram, fetch_notifications
 from state_manager import state
@@ -439,7 +440,7 @@ def handle_call_keypad():
     # --- Truck & Driver Status (Key 5) ---
     elif digit == "5":
         pool = get_active_pool() or state.active_pool
-        hindi_reply = f"{farmer_name} जी, महिन्द्रा बोलेरो लेकर बलजीत सिंह आ रहे हैं। गाड़ी {pool.get('capacity_percentage', 100)}% फुल है। आज दोपहर 1:30 बजे आगमन होगा।"
+        hindi_reply = f"{farmer_name} जी, गाड़ी पूलिंग चालू है। बोलेरो पिकअप कल सुबह 7 बजे रवाना होगी। आपका पिकअप स्लॉट सुबह 8 बजकर 45 मिनट से 9 बजकर 15 मिनट तक रहेगा। ड्राइवर बलजीत सिंह हैं।"
         audio_bytes = generate_hindi_audio(hindi_reply)
         audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
         return jsonify({
@@ -447,7 +448,15 @@ def handle_call_keypad():
             "digit": "5",
             "voice_prompt_hi": hindi_reply,
             "audio_base64": audio_b64,
-            "pool": pool
+            "pool": pool,
+            "milkrun": {
+                "route": "Village Bhalaut (PACS) ➔ Azadpur Mandi",
+                "driver": "Baljit Singh (+91 94160 88219)",
+                "vehicle": "Mahindra Bolero Maxi Truck (HR-12-AE-8419)",
+                "cutoff": "Today, 06:00 PM",
+                "departure": "Tomorrow, 07:00 AM",
+                "farmer_pickup_slot": "08:45 AM - 09:15 AM (Stop #3)"
+            }
         })
 
     else:
@@ -662,6 +671,192 @@ def scan_crop_disease():
         "prescription": prescription,
         "spoken_text_hi": hindi_text,
         "audio_base64": audio_b64
+    })
+
+@app.route("/api/advisory/catalog", methods=["GET"])
+def get_crop_catalog_route():
+    catalog = get_crop_diseases_catalog()
+    return jsonify({
+        "status": "SUCCESS",
+        "crops": list(catalog.keys()),
+        "catalog": catalog
+    })
+
+@app.route("/api/advisory/prescribe", methods=["POST"])
+def get_crop_prescription_route():
+    data = request.get_json(silent=True) or {}
+    crop = data.get("crop", "Mustard")
+    disease = data.get("disease", "Aphids / Mahu")
+    presc = get_prescription(crop=crop, disease=disease)
+
+    hindi_summary = f"{crop} में {presc['disease_name']} के लिए {presc['chemical_salt']} का छिड़काव करें। 15 लीटर ढोलकी पंप नाप: {presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}। {presc['warning_hi']}"
+    audio_bytes = generate_hindi_audio(hindi_summary)
+    audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
+
+    return jsonify({
+        "status": "SUCCESS",
+        "crop": crop,
+        "disease": disease,
+        "prescription": presc,
+        "spoken_text_hi": hindi_summary,
+        "audio_base64": audio_b64
+    })
+
+@app.route("/api/voice/process", methods=["POST"])
+def process_voice_route():
+    """
+    Multimodal voice endpoint for Web Simulator & Mobile app.
+    Ingests recorded audio bytes (base64) or transcribed text,
+    parses dialect via Gemini 3.8 Flash, and executes corresponding action.
+    """
+    data = request.get_json(silent=True) or {}
+    phone = data.get("phone", "+91 98123 45099").strip()
+    audio_b64 = data.get("audio_base64")
+    text_input = data.get("text")
+
+    raw_payload = None
+    mime_type = "audio/webm"
+    if audio_b64:
+        try:
+            raw_payload = base64.b64decode(audio_b64)
+            mime_type = data.get("mime_type", "audio/webm")
+        except Exception:
+            raw_payload = text_input
+    else:
+        raw_payload = text_input or "20 बोरी गेहूं मंडी भेजनी है"
+
+    parsed = parse_voice_dialect_intent(raw_payload, mime_type=mime_type)
+    intent = parsed.get("intent", "CROP_LOT")
+    crop = parsed.get("crop", "Mustard")
+    transcript = parsed.get("transcription") or text_input or "आवाज़ संदेश"
+
+    user = get_user(phone) or get_or_create_user(phone, name="Kisan Mitra")
+    farmer_name = user["name"]
+    village = user.get("village", "Bhalaut")
+
+    # Domain routing
+    if intent == "TUBEWELL":
+        from core.tubewell import calculate_tubewell_advisory
+        res = calculate_tubewell_advisory(crop=crop, village=village, acres=1.0)
+        reply = (
+            f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+            f"🚿 *{res['crop_hindi']} - आज का ट्यूबवेल सुझाव*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"⏱️ *सुझाव:* *{res['headline_hi']}*\n"
+            f"💡 *कारण:* {res['reason_hi']}\n"
+            f"⚡ *कृषि 3-फेज बिजली:* {res['power_roster']['active_slot']}\n"
+            f"🌱 *बचत:* ~{res['groundwater_saved_liters']:,} लीटर भूजल व {res['electricity_units_saved_kwh']} यूनिट बिजली की बचत!"
+        )
+        audio_bytes = generate_hindi_audio(res.get("voice_text_hi") or res["headline_hi"])
+        options = [
+            {"label": f"🌾 {crop} पूलिंग में जोड़ें", "cmd": f"/lotcrop {crop.lower()}"},
+            {"label": "📈 मंडी भाव देखें", "cmd": f"/mandi {crop.lower()}"}
+        ]
+
+    elif intent == "MANDI":
+        p = get_mandi_price(crop)
+        diff = p['modal_price'] - p.get('local_trader_price', 4700)
+        reply = (
+            f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+            f"📈 *आज का {crop} मंडी भाव*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🏛️ *आज़ादपुर APMC मंडी:* ₹{p['modal_price']} / क्विंटल\n"
+            f"🏘️ *गांव का स्थानीय आढ़ती:* ₹{p.get('local_trader_price', 4700)} / क्विंटल\n"
+            f"💰 *KhetOS से सीधा मुनाफा:* *+₹{diff}/क्विंटल*\n"
+            f"🛡️ *शून्य पेनाल्टी पूलिंग:* सीधे खेत से महिंद्रा बोलेरो पिकअप!"
+        )
+        spoken_text = f"आज {crop} का आज़ादपुर भाव ₹{p['modal_price']} है। खेतOS से आपको ₹{diff} प्रति क्विंटल का सीधा अतिरिक्त मुनाफा होगा।"
+        audio_bytes = generate_hindi_audio(spoken_text)
+        options = [
+            {"label": f"🌾 {crop} गाड़ी में लोड कराएं", "cmd": f"/lotcrop {crop.lower()}"},
+            {"label": "🚿 सिंचाई सलाह", "cmd": f"/tubewell {crop.lower()}"}
+        ]
+
+    elif intent == "PESTICIDE_DOCTOR":
+        disease_query = parsed.get("pest_or_disease") or "Aphids / Mahu"
+        presc = get_prescription(crop=crop, disease=disease_query)
+        reply = (
+            f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+            f"🌿 *ICAR AI फसल डॉक्टर व कीटनाशक सलाह*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🌾 *फसल:* {crop}\n"
+            f"🦠 *कीट/बीमारी:* *{presc['disease_name']}*\n"
+            f"🧪 *असली टेक्निकल साल्ट:* `{presc['chemical_salt']}`\n"
+            f"⚖️ *15L ढोलकी नाप:* *{presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}*\n"
+            f"💰 *खर्च:* जेनेरिक {presc.get('generic_price', '₹180')} vs ब्रांडेड {presc.get('brand_price', '₹850')} (*~{presc.get('savings_pct', 75)}% बचत*)\n"
+            f"🌱 *जैविक विकल्प:* {presc.get('organic_alternative_hi', 'नीम का तेल')}\n\n"
+            f"⚠️ *सुरक्षा चेतावनी:* {presc['warning_hi']}"
+        )
+        spoken_summary = f"{crop} में {presc['disease_name']} के लिए दुकानदार से {presc['chemical_salt']} मांगें। {presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}।"
+        audio_bytes = generate_hindi_audio(spoken_summary)
+        options = [
+            {"label": "🌾 अन्य रोग सलाह", "cmd": "/photo"},
+            {"label": "🚿 ट्यूबवेल सलाह", "cmd": f"/tubewell {crop.lower()}"}
+        ]
+
+    elif intent == "TRUCK_TRACKING":
+        pool = get_active_pool() or state.active_pool
+        reply = (
+            f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+            f"🚛 *महिंद्रा बोलेरो - कृषि मिल्क-रन ट्रैकिंग*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"🚚 *वाहन:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8419)\n"
+            f"👤 *ड्राइवर:* बलजीत सिंह (+91 94160 88219)\n"
+            f"⏱️ *कट-ऑफ विंडो:* आज शाम 6:00 बजे | *प्रस्थान:* कल सुबह 07:00 बजे\n"
+            f"🛣️ *मिल्क-रन रूट टाइमलाइन:*\n"
+            f"  1. दिनेश छिल्लर (कल सुबह 07:15 - 07:45 AM)\n"
+            f"  2. सुरेश कुमार (कल सुबह 08:00 - 08:30 AM)\n"
+            f"  3. आपका खेत (कल सुबह 08:45 - 09:15 AM)\n"
+            f"  ➔ आज़ादपुर APMC मंडी: कल सुबह 10:45 AM\n\n"
+            f"📊 *बोलेरो लोड:* {pool.get('capacity_percentage', 73.3)}% ({pool.get('status', 'ACCEPTING_LOTS')})"
+        )
+        spoken_summary = "बोलेरो गाड़ी का रूट कल सुबह 7 बजे शुरू होगा। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे निर्धारित है।"
+        audio_bytes = generate_hindi_audio(spoken_summary)
+        options = [
+            {"label": "✅ पिकअप स्वीकार करें", "cmd": "/accept"},
+            {"label": "⏳ पिकअप टालें (₹0)", "cmd": "/reject"},
+            {"label": "📦 मेरा स्टॉक", "cmd": "/mystock"}
+        ]
+
+    else:
+        # Default: CROP_LOT
+        bags = parsed.get("bags_count", 8)
+        qty = parsed.get("quantity_quintals", round(bags * 0.5, 1))
+        lot = create_lot(phone, crop, qty, channel="web_voice")
+        pool = get_active_pool() or state.active_pool
+        cap_pct = pool.get('capacity_percentage', 80.0)
+        status_label = "डिस्पैच लॉक (100% Full)" if cap_pct >= 99 else "पूलिंग जारी (Accepting Lots)"
+
+        reply = (
+            f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
+            f"✅ *बधाई {farmer_name} जी! आपकी फसल पूलिंग में दर्ज हो गई!*\n"
+            f"━━━━━━━━━━━━━━━━━━\n"
+            f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
+            f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
+            f"🚚 *गाड़ी:* Mahindra Bolero Maxi Truck (HR-12-AE-8419)\n"
+            f"⏱️ *पिकअप स्लॉट:* कल सुबह 08:45 - 09:15 बजे (एग्री मिल्क-रन)\n"
+            f"📊 *बोलेरो लोड:* {cap_pct}% ({status_label})\n"
+            f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
+            f"📍 *कट-ऑफ:* आज शाम 6:00 बजे | *रूट प्रस्थान:* कल सुबह 07:00 बजे"
+        )
+        spoken_summary = f"बधाई {farmer_name} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे है।"
+        audio_bytes = generate_hindi_audio(spoken_summary)
+        options = [
+            {"label": "📦 मेरा स्टॉक देखें", "cmd": "/mystock"},
+            {"label": "🚿 ट्यूबवेल सलाह", "cmd": f"/tubewell {crop.lower()}"},
+            {"label": "🚛 गाड़ी स्थिति", "cmd": "/truckstatus"}
+        ]
+
+    audio_b64_out = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
+
+    return jsonify({
+        "status": "SUCCESS",
+        "parsed": parsed,
+        "reply": reply,
+        "audio_base64": audio_b64_out,
+        "options": options,
+        "intent": intent,
+        "crop": crop
     })
 
 # --- Smart Tubewell & Irrigation Advisory Route ---
@@ -1159,13 +1354,17 @@ def telegram_bot_command():
     elif cmd == "/truckstatus":
         pool = get_active_pool() or state.active_pool
         reply = (
-            f"🚛 *बोलेरो पिकअप ट्रैकिंग*\n"
+            f"🚛 *महिंद्रा बोलेरो - कृषि मिल्क-रन ट्रैकिंग*\n"
             f"━━━━━━━━━━━━━━━━━━\n"
-            f"🚚 *वाहन:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8821)\n"
+            f"🚚 *वाहन:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8419)\n"
             f"👤 *ड्राइवर:* बलजीत सिंह (+91 94160 88219)\n"
-            f"🛣️ *रूट:* भलौट ➔ रोहतक ➔ आज़ादपुर APMC मंडी\n"
-            f"📊 *बोलेरो लोड:* {pool.get('capacity_percentage', 100)}% ({pool.get('status', 'ACCEPTING_LOTS')})\n"
-            f"⏱️ *अनुमानित आगमन:* आज दोपहर 01:30 बजे"
+            f"⏱️ *कट-ऑफ विंडो:* आज शाम 6:00 बजे | *प्रस्थान:* कल सुबह 07:00 बजे रोहतक हब से\n"
+            f"🛣️ *मिल्क-रन रूट टाइमलाइन:*\n"
+            f"  1. दिनेश छिल्लर (कल सुबह 07:15 - 07:45 AM)\n"
+            f"  2. सुरेश कुमार (कल सुबह 08:00 - 08:30 AM)\n"
+            f"  3. आपका खेत (कल सुबह 08:45 - 09:15 AM)\n"
+            f"  ➔ आज़ादपुर APMC मंडी: कल सुबह 10:45 AM (नीलामी पूर्व)\n\n"
+            f"📊 *बोलेरो लोड:* {pool.get('capacity_percentage', 73.3)}% ({pool.get('status', 'ACCEPTING_LOTS')})"
         )
         options = [
             {"label": "✅ पिकअप स्वीकार करें", "cmd": "/accept"},
@@ -1239,13 +1438,119 @@ def telegram_bot_command():
             {"label": "🚿 ट्यूबवेल सलाह", "cmd": "/tubewell"}
         ]
     else:
-        reply = f"अनजान कमांड `{command_text}`। उपलब्ध विकल्पों में से चुनें:"
-        options = [
-            {"label": "🌾 फसल जोड़ें", "cmd": "/addlot_start"},
-            {"label": "🚿 ट्यूबवेल सलाह", "cmd": "/tubewell"},
-            {"label": "📈 मंडी भाव", "cmd": "/mandi"},
-            {"label": "📦 मेरा स्टॉक", "cmd": "/mystock"}
-        ]
+        # Dynamic vernacular text & voice transcript router
+        parsed = parse_voice_dialect_intent(command_text)
+        intent = parsed.get("intent", "CROP_LOT")
+        crop = parsed.get("crop", "Mustard")
+        transcript = parsed.get("transcription") or command_text
+
+        if intent == "TUBEWELL":
+            from core.tubewell import calculate_tubewell_advisory
+            res = calculate_tubewell_advisory(crop=crop, village=village, acres=1.0)
+            spoken_text = res.get("voice_text_hi") or res["headline_hi"]
+            reply = (
+                f"🎙️ *आवाज़/संदेश समझा गया:* \"{transcript}\"\n\n"
+                f"🚿 *{res['crop_hindi']} - आज का ट्यूबवेल सुझाव*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"⏱️ *सुझाव:* *{res['headline_hi']}*\n"
+                f"💡 *कारण:* {res['reason_hi']}\n\n"
+                f"⚡ *कृषि 3-फेज बिजली:* {res['power_roster']['active_slot']}\n"
+                f"🌱 *बचत:* ~{res['groundwater_saved_liters']:,} लीटर भूजल व {res['electricity_units_saved_kwh']} यूनिट बिजली की बचत!"
+            )
+            options = [
+                {"label": f"🌾 {crop} पूलिंग में जोड़ें", "cmd": f"/lotcrop {crop.lower()}"},
+                {"label": "📈 मंडी भाव देखें", "cmd": f"/mandi {crop.lower()}"}
+            ]
+
+        elif intent == "MANDI":
+            p = get_mandi_price(crop)
+            diff = p['modal_price'] - p.get('local_trader_price', 4700)
+            spoken_text = f"आज {crop} का आज़ादपुर मंडी भाव ₹{p['modal_price']} है। खेतOS से आपको ₹{diff} प्रति क्विंटल का सीधा अतिरिक्त मुनाफा होगा।"
+            reply = (
+                f"🎙️ *आवाज़/संदेश समझा गया:* \"{transcript}\"\n\n"
+                f"📈 *आज का {crop} मंडी भाव*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🏛️ *आज़ादपुर APMC मंडी:* ₹{p['modal_price']} / क्विंटल\n"
+                f"🏘️ *गांव का स्थानीय आढ़ती:* ₹{p.get('local_trader_price', 4700)} / क्विंटल\n"
+                f"💰 *KhetOS से सीधा मुनाफा:* *+₹{diff}/क्विंटल*\n"
+                f"🛡️ *शून्य पेनाल्टी पूलिंग:* सीधे खेत से महिंद्रा बोलेरो पिकअप!"
+            )
+            options = [
+                {"label": f"🌾 {crop} गाड़ी में लोड कराएं", "cmd": f"/lotcrop {crop.lower()}"},
+                {"label": "🚿 सिंचाई सलाह", "cmd": f"/tubewell {crop.lower()}"}
+            ]
+
+        elif intent == "PESTICIDE_DOCTOR":
+            disease_query = parsed.get("pest_or_disease") or "Aphids / Mahu"
+            presc = get_prescription(crop=crop, disease=disease_query)
+            spoken_text = f"{crop} में {presc['disease_name']} के लिए {presc['chemical_salt']} का छिड़काव करें। {presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}।"
+            reply = (
+                f"🎙️ *आवाज़/संदेश समझा गया:* \"{transcript}\"\n\n"
+                f"🌿 *ICAR AI फसल डॉक्टर व कीटनाशक सलाह*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🌾 *फसल:* {crop}\n"
+                f"🦠 *कीट/बीमारी:* *{presc['disease_name']}*\n"
+                f"🧪 *असली टेक्निकल साल्ट:* `{presc['chemical_salt']}`\n"
+                f"⚖️ *15L ढोलकी नाप:* *{presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}*\n"
+                f"💰 *खर्च:* जेनेरिक {presc.get('generic_price', '₹180')} vs ब्रांडेड {presc.get('brand_price', '₹850')} (*~{presc.get('savings_pct', 75)}% बचत*)\n"
+                f"🌱 *जैविक विकल्प:* {presc.get('organic_alternative_hi', 'नीम का तेल')}\n\n"
+                f"⚠️ *सुरक्षा चेतावनी:* {presc['warning_hi']}"
+            )
+            options = [
+                {"label": "🌾 अन्य रोग सलाह", "cmd": "/photo"},
+                {"label": "🚿 ट्यूबवेल सलाह", "cmd": f"/tubewell {crop.lower()}"}
+            ]
+
+        elif intent == "TRUCK_TRACKING":
+            pool = get_active_pool() or state.active_pool
+            spoken_text = "बोलेरो गाड़ी का रूट कल सुबह 7 बजे शुरू होगा। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे निर्धारित है।"
+            reply = (
+                f"🎙️ *आवाज़/संदेश समझा गया:* \"{transcript}\"\n\n"
+                f"🚛 *महिंद्रा बोलेरो - कृषि मिल्क-रन ट्रैकिंग*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"🚚 *वाहन:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')} (HR-12-AE-8419)\n"
+                f"👤 *ड्राइवर:* बलजीत सिंह (+91 94160 88219)\n"
+                f"⏱️ *कट-ऑफ विंडो:* आज शाम 6:00 बजे | *प्रस्थान:* कल सुबह 07:00 बजे रोहतक हब से\n"
+                f"🛣️ *मिल्क-रन रूट टाइमलाइन:*\n"
+                f"  1. दिनेश छिल्लर (कल सुबह 07:15 - 07:45 AM)\n"
+                f"  2. सुरेश कुमार (कल सुबह 08:00 - 08:30 AM)\n"
+                f"  3. आपका खेत (कल सुबह 08:45 - 09:15 AM)\n"
+                f"  ➔ आज़ादपुर APMC मंडी: कल सुबह 10:45 AM (नीलामी पूर्व)\n\n"
+                f"📊 *बोलेरो लोड:* {pool.get('capacity_percentage', 73.3)}% ({pool.get('status', 'ACCEPTING_LOTS')})"
+            )
+            options = [
+                {"label": "✅ पिकअप स्वीकार करें", "cmd": "/accept"},
+                {"label": "⏳ पिकअप टालें (₹0)", "cmd": "/reject"},
+                {"label": "📦 मेरा स्टॉक", "cmd": "/mystock"}
+            ]
+
+        else:
+            # Default: CROP_LOT
+            bags = parsed.get("bags_count", 8)
+            qty = parsed.get("quantity_quintals", round(bags * 0.5, 1))
+            lot = create_lot(phone, crop, qty, channel="telegram_bot")
+            pool = get_active_pool() or state.active_pool
+            cap_pct = pool.get('capacity_percentage', 80.0)
+            status_label = "डिस्पैच लॉक (100% Full)" if cap_pct >= 99 else "पूलिंग जारी (Accepting Lots)"
+
+            spoken_text = f"बधाई {farmer_name} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे है।"
+            reply = (
+                f"🎙️ *आवाज़/संदेश समझा गया:* \"{transcript}\"\n\n"
+                f"✅ *बधाई {farmer_name} जी! आपकी फसल पूलिंग में दर्ज हो गई!*\n"
+                f"━━━━━━━━━━━━━━━━━━\n"
+                f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
+                f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
+                f"🚚 *गाड़ी:* Mahindra Bolero Maxi Truck (HR-12-AE-8419)\n"
+                f"⏱️ *पिकअप स्लॉट:* कल सुबह 08:45 - 09:15 बजे (एग्री मिल्क-रन)\n"
+                f"📊 *बोलेरो लोड:* {cap_pct}% ({status_label})\n"
+                f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
+                f"📍 *कट-ऑफ:* आज शाम 6:00 बजे | *रूट प्रस्थान:* कल सुबह 07:00 बजे"
+            )
+            options = [
+                {"label": "📦 मेरा स्टॉक देखें", "cmd": "/mystock"},
+                {"label": "🚿 ट्यूबवेल सलाह", "cmd": f"/tubewell {crop.lower()}"},
+                {"label": "🚛 गाड़ी स्थिति", "cmd": "/truckstatus"}
+            ]
 
     # Clean markdown formatting for natural neural Hindi speech
     if not spoken_text:

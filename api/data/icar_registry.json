@@ -1,73 +1,250 @@
 {
-  "Wheat": {
-    "Yellow Rust": {
-      "name_hi": "पीला रतुआ (Yellow Rust)",
-      "chemical_salt": "Propiconazole 25% EC",
-      "dosage": "1 ml per litre of water (200 ml in 200L water per acre)",
-      "dosage_hi": "1 लीटर पानी में 1 मिलीलीटर मिलाकर छिड़कें (एक एकड़ में 200ml)",
-      "market_price_approx": "₹180 - ₹220 per 250ml",
-      "phi_days": 30,
-      "warning_hi": "दुकानदार से महंगी ब्रांडेड दवा न लें, केवल प्रोपिकोनाज़ोल 25% EC साल्ट मांगें।"
-    },
-    "Loose Smut": {
-      "name_hi": "कंगुआ रोग (Loose Smut)",
-      "chemical_salt": "Carboxin 37.5% + Thiram 37.5% WS",
-      "dosage": "2.5 grams per kg seed treatment",
-      "dosage_hi": "2.5 ग्राम प्रति किलो बीज शोधन",
-      "market_price_approx": "₹140 per 100g",
-      "phi_days": 45,
-      "warning_hi": "बीज शोधन के समय ही इसका प्रयोग करें।"
-    }
-  },
   "Mustard": {
+    "Aphids / Mahu": {
+      "name_hi": "माहू / चेपा कीट (Mustard Aphids)",
+      "type": "pest",
+      "chemical_salt": "Imidacloprid 17.8% SL",
+      "dosage": "1 ml per 3 litres of water (approx. 50-60 ml in 150-180L water per acre)",
+      "dosage_hi": "1 मिलीलीटर प्रति 3 लीटर पानी में घोलकर छिड़कें",
+      "dosage_15l_tank_hi": "5 से 6 मिलीलीटर प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹180 per 250ml",
+      "brand_price": "₹850 (Bayer Confidor / Rogor)",
+      "savings_pct": 79,
+      "organic_alternative_hi": "नीम का तेल (Azadirachtin 10,000 PPM) 40ml प्रति 15 लीटर पानी या 5% नीम गिरी का काढ़ा।",
+      "phi_days": 21,
+      "warning_hi": "चेपा पत्तियों और फलियों का रस चूसता है। दोपहर 12 से 3 बजे के बीच ओस सूखने पर छिड़कें। सुबह मधुमक्खियों के परागण के समय कीटनाशक कभी न डालें।"
+    },
     "Alternaria Blight": {
       "name_hi": "अल्टरनेरिया झुलसा (Alternaria Blight)",
+      "type": "fungal",
       "chemical_salt": "Mancozeb 75% WP",
       "dosage": "2 grams per litre of water (500g in 250L water per acre)",
-      "dosage_hi": "2 ग्राम प्रति लीटर पानी में मिलाकर छिड़कें",
-      "market_price_approx": "₹150 - ₹190 per 500g",
+      "dosage_hi": "2 से 2.5 ग्राम प्रति लीटर पानी में मिलाकर छिड़कें",
+      "dosage_15l_tank_hi": "35 से 40 ग्राम प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹160 per 500g",
+      "brand_price": "₹450 (Indofil M-45)",
+      "savings_pct": 64,
+      "organic_alternative_hi": "ट्राइकोडर्मा विरिडी (Trichoderma viride) 50 ग्राम प्रति 15 लीटर पानी में घोलकर छिड़काव करें।",
       "phi_days": 15,
-      "warning_hi": "दुकानदार के महंगे कॉकटेल से बचें, सीधा मैंकोज़ेब 75% WP मांगें।"
+      "warning_hi": "पत्तियों पर भूरे-काले छल्लेदार धब्बे दिखते ही पहला छिड़काव करें। दुकानदार के महंगे कॉकटेल से बचें, सीधा जेनेरिक मैंकोज़ेब 75% WP मांगें।"
     },
     "White Rust": {
       "name_hi": "सफेद रतुआ (White Rust)",
+      "type": "fungal",
       "chemical_salt": "Metalaxyl 8% + Mancozeb 64% WP",
       "dosage": "2.5 grams per litre of water",
       "dosage_hi": "2.5 ग्राम प्रति लीटर पानी में मिलाकर छिड़कें",
-      "market_price_approx": "₹220 per 250g",
+      "dosage_15l_tank_hi": "35 से 40 ग्राम प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹220 per 250g",
+      "brand_price": "₹720 (Syngenta Ridomil Gold)",
+      "savings_pct": 69,
+      "organic_alternative_hi": "खट्टी छाछ (मट्ठा) 1 लीटर + 50 ग्राम हींग 15 लीटर पानी में मिलाकर छिड़कें।",
       "phi_days": 20,
-      "warning_hi": "पत्तियों के निचले हिस्से पर छिड़काव अवश्य करें।"
+      "warning_hi": "पत्तियों की निचली सतह पर सफेद फफोले पड़ते हैं। स्प्रे करते समय नोजल को नीचे से ऊपर की ओर घुमाएं ताकि दवा पत्तों के नीचे पहुंचे।"
+    },
+    "Painted Bug": {
+      "name_hi": "चितकबरा कीड़ा (Painted Bug)",
+      "type": "pest",
+      "chemical_salt": "Malathion 50% EC",
+      "dosage": "1.5 ml per litre of water",
+      "dosage_hi": "1.5 मिलीलीटर प्रति लीटर पानी",
+      "dosage_15l_tank_hi": "22 से 25 मिलीलीटर प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹140 per 250ml",
+      "brand_price": "₹380",
+      "savings_pct": 63,
+      "organic_alternative_hi": "राख (लकड़ी की भस्म) को सुबह ओस के समय पौधों पर बुरकें।",
+      "phi_days": 10,
+      "warning_hi": "यह कीट फसल की शुरुआती अवस्था में पौधों का रस चूसता है। केवल प्रभावित क्यारियों में ही छिड़कें।"
+    }
+  },
+  "Wheat": {
+    "Yellow Rust": {
+      "name_hi": "पीला रतुआ (Yellow Rust)",
+      "type": "fungal",
+      "chemical_salt": "Propiconazole 25% EC",
+      "dosage": "1 ml per litre of water (200 ml in 200L water per acre)",
+      "dosage_hi": "1 मिलीलीटर प्रति लीटर पानी (एक एकड़ में 200ml)",
+      "dosage_15l_tank_hi": "15 से 20 मिलीलीटर प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹190 per 250ml",
+      "brand_price": "₹980 (Syngenta Tilt)",
+      "savings_pct": 80,
+      "organic_alternative_hi": "स्यूडोमोनास फ्लोरेसेंस (Pseudomonas fluorescens) 10 ग्राम प्रति लीटर पानी में मिलाकर छिड़काव करें।",
+      "phi_days": 30,
+      "warning_hi": "पत्तियों पर पीले रंग की हल्दी जैसी धारियां दिखते ही छिड़काव करें। ब्रांडेड टिल्ट (Tilt) के बजाय जेनेरिक प्रोपिकोनाज़ोल 25% EC मांगें।"
+    },
+    "Termites": {
+      "name_hi": "दीमक (Wheat Termites)",
+      "type": "pest",
+      "chemical_salt": "Chlorpyrifos 20% EC",
+      "dosage": "3 to 4 ml per litre or 1.5 - 2 Litre per acre with first irrigation",
+      "dosage_hi": "सिंचाई के पानी के साथ 1.5 से 2 लीटर प्रति एकड़ बूंद-बूंद करके बहाएं",
+      "dosage_15l_tank_hi": "50 मिलीलीटर प्रति 15 लीटर ढोलकी (जड़ों के पास ड्रेंचिंग हेतु)",
+      "generic_price": "₹280 per 1 Litre",
+      "brand_price": "₹750 (Dursban)",
+      "savings_pct": 63,
+      "organic_alternative_hi": "नीम की खली (Neem Cake) 100 किलोग्राम प्रति एकड़ बुवाई या पहली सिंचाई के समय खेत में डालें।",
+      "phi_days": 40,
+      "warning_hi": "दीमक पौधों की जड़ों को काट देती है जिससे पौधे सूख जाते हैं। सिंचाई की नाली में मटका रखकर बूंद-बूंद दवा छोड़ें।"
+    },
+    "Loose Smut": {
+      "name_hi": "कंगियारी रोग (Loose Smut)",
+      "type": "fungal",
+      "chemical_salt": "Carboxin 37.5% + Thiram 37.5% WS",
+      "dosage": "2.5 grams per kg seed treatment",
+      "dosage_hi": "2.5 ग्राम दवा से 1 किलोग्राम बीज का उपचार करें",
+      "dosage_15l_tank_hi": "बीज शोधन (Seed Treatment) - छिड़काव की आवश्यकता नहीं",
+      "generic_price": "₹140 per 100g",
+      "brand_price": "₹390 (Vitavax)",
+      "savings_pct": 64,
+      "organic_alternative_hi": "बीज को मई-जून की तेज धूप में 4 घंटे सुखाएं और गोमूत्र से उपचारित करें।",
+      "phi_days": 45,
+      "warning_hi": "बालियों में दानों की जगह काला चूर्ण बन जाता है। यह बीज जनित रोग है, इसलिए बुवाई पूर्व बीज शोधन अनिवार्य है।"
+    },
+    "Armyworm": {
+      "name_hi": "सैनिक कीट / इल्ली (Armyworm / Mythimna)",
+      "type": "pest",
+      "chemical_salt": "Emamectin Benzoate 5% SG",
+      "dosage": "0.5 grams per litre of water",
+      "dosage_hi": "0.5 ग्राम प्रति लीटर पानी",
+      "dosage_15l_tank_hi": "7 से 8 ग्राम प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹210 per 100g",
+      "brand_price": "₹820 (Proclaim)",
+      "savings_pct": 74,
+      "organic_alternative_hi": "बैसिलस थुरिंजिएंसिस (Bt - Bacillus thuringiensis) 2 ग्राम प्रति लीटर पानी।",
+      "phi_days": 14,
+      "warning_hi": "इल्लियां रात में पत्तियों और बालियों को काटती हैं। छिड़काव शाम 4 बजे के बाद करें।"
     }
   },
   "Potato": {
     "Late Blight": {
       "name_hi": "पिछेता झुलसा (Late Blight of Potato)",
-      "chemical_salt": "Mancozeb 75% WP + Cymoxanil 8%",
-      "dosage": "2.5 grams per litre of water (approx. 500g in 200L water per acre)",
-      "dosage_hi": "2.5 ग्राम प्रति लीटर पानी में घोलकर पत्तियों पर दोनों तरफ छिड़कें",
-      "market_price_approx": "₹240 - ₹280 per 500g",
+      "type": "fungal",
+      "chemical_salt": "Cymoxanil 8% + Mancozeb 64% WP",
+      "dosage": "2.5 to 3 grams per litre of water",
+      "dosage_hi": "2.5 से 3 ग्राम प्रति लीटर पानी में घोलकर छिड़कें",
+      "dosage_15l_tank_hi": "40 ग्राम प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹260 per 500g",
+      "brand_price": "₹1,180 (Curzate / Acrobat)",
+      "savings_pct": 78,
+      "organic_alternative_hi": "तांबे के बर्तन में रखी 5 दिन पुरानी छाछ 1.5 लीटर प्रति 15 लीटर पानी में मिलाकर छिड़कें।",
       "phi_days": 14,
-      "warning_hi": "बादल छाए रहने या कोहरे के समय तुरंत छिड़काव करें। 80% बचत के लिए जेनेरिक साल्ट ही खरीदें।"
+      "warning_hi": "कोहरे और 80% से अधिक नमी में यह बीमारी 48 घंटे में पूरा खेत नष्ट कर सकती है। मौसम खराब होते ही तुरंत प्रिवेंटिव स्प्रे करें।"
     },
     "Early Blight": {
       "name_hi": "अगेती झुलसा (Early Blight of Potato)",
+      "type": "fungal",
       "chemical_salt": "Chlorothalonil 75% WP",
-      "dosage": "2.0 grams per litre of water",
-      "dosage_hi": "2.0 ग्राम प्रति लीटर पानी में मिलाकर छिड़कें",
-      "market_price_approx": "₹190 per 500g",
+      "dosage": "2 grams per litre of water",
+      "dosage_hi": "2 ग्राम प्रति लीटर पानी में मिलाकर छिड़कें",
+      "dosage_15l_tank_hi": "30 ग्राम प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹190 per 500g",
+      "brand_price": "₹650 (Kavach)",
+      "savings_pct": 70,
+      "organic_alternative_hi": "दशपर्णी अर्क (Dashparni Ark) 500ml प्रति 15 लीटर पंप।",
       "phi_days": 12,
-      "warning_hi": "निचली पत्तियों पर गोल छल्लेदार धब्बे दिखते ही पहला छिड़काव करें।"
+      "warning_hi": "पुरानी निचली पत्तियों पर भूरे छल्लेदार धब्बे दिखते ही पहला छिड़काव करें।"
+    },
+    "Tuber Moth": {
+      "name_hi": "कंद शलभ / इल्ली (Potato Tuber Moth)",
+      "type": "pest",
+      "chemical_salt": "Chlorantraniliprole 18.5% SC",
+      "dosage": "0.4 ml per litre of water",
+      "dosage_hi": "0.4 मिलीलीटर प्रति लीटर पानी",
+      "dosage_15l_tank_hi": "6 मिलीलीटर प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹320 per 60ml",
+      "brand_price": "₹1,250 (Coragen)",
+      "savings_pct": 74,
+      "organic_alternative_hi": "नीम का तेल (10,000 PPM) 40ml + फेरोमोन ट्रैप (Pheromone Traps) 4 ट्रैप प्रति एकड़।",
+      "phi_days": 21,
+      "warning_hi": "आलू को मिट्टी से अच्छी तरह ढककर रखें ताकि कीट कंदों तक न पहुंच सके।"
     }
   },
   "Paddy": {
+    "Stem Borer": {
+      "name_hi": "तना छेदक कीट (Paddy Yellow Stem Borer)",
+      "type": "pest",
+      "chemical_salt": "Cartap Hydrochloride 4% G",
+      "dosage": "7.5 to 10 kg per acre in standing water",
+      "dosage_hi": "7.5 से 10 किलोग्राम प्रति एकड़ खड़े पानी में बुरकें",
+      "dosage_15l_tank_hi": "दानेदार दवा (Granules) - 1.5 से 2 किलो प्रति 10 बिस्वा खेत में बुरकाव",
+      "generic_price": "₹340 per 5kg",
+      "brand_price": "₹920 (Padan / Caldan)",
+      "savings_pct": 63,
+      "organic_alternative_hi": "ट्राइकोग्रामा कार्ड (Trichogramma Cards) 2 कार्ड प्रति एकड़ खेत में लगाएं।",
+      "phi_days": 30,
+      "warning_hi": "सफेद बालियां (White Earhead) या मृत गोभ (Dead Heart) दिखते ही दवा डालें। खेत में 2-3 इंच पानी होना जरूरी है।"
+    },
+    "Brown Planthopper": {
+      "name_hi": "भूरा फुदका (Brown Planthopper - BPH)",
+      "type": "pest",
+      "chemical_salt": "Pymetrozine 50% WDG",
+      "dosage": "0.6 grams per litre of water",
+      "dosage_hi": "0.6 ग्राम प्रति लीटर पानी",
+      "dosage_15l_tank_hi": "10 से 12 ग्राम प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹280 per 120g",
+      "brand_price": "₹1,050 (Chess / Osheen)",
+      "savings_pct": 73,
+      "organic_alternative_hi": "खेत में हवा और रोशनी के लिए हर 2 मीटर पर 30 सेमी का रास्ता छोड़ें (Alleyways)।",
+      "phi_days": 21,
+      "warning_hi": "यह कीट पौधों के तने के निचले हिस्से में रस चूसता है जिससे हॉपर बर्न (खेत जल जाना) होता है। नोजल तने की जड़ की ओर रखें।"
+    },
+    "Blast Disease": {
+      "name_hi": "झोंका रोग (Paddy Blast)",
+      "type": "fungal",
+      "chemical_salt": "Tricyclazole 75% WP",
+      "dosage": "0.6 grams per litre of water",
+      "dosage_hi": "0.6 ग्राम प्रति लीटर पानी",
+      "dosage_15l_tank_hi": "10 से 15 ग्राम प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹240 per 120g",
+      "brand_price": "₹780 (Beam)",
+      "savings_pct": 69,
+      "organic_alternative_hi": "स्यूडोमोनास फ्लोरेसेंस 50 ग्राम प्रति 15 लीटर पंप।",
+      "phi_days": 30,
+      "warning_hi": "पत्तियों पर आंख के आकार के धब्बे और गर्दन पर कालापन दिखता है। यूरिया की अत्यधिक मात्रा न डालें।"
+    },
     "Bacterial Leaf Blight": {
-      "name_hi": "जीवाणु झुलसा (Bacterial Blight)",
+      "name_hi": "जीवाणु झुलसा (Bacterial Leaf Blight)",
+      "type": "bacterial",
       "chemical_salt": "Copper Oxychloride 50% WP + Streptocycline",
       "dosage": "2.5g Copper Oxychloride + 0.05g Streptocycline per litre",
       "dosage_hi": "2.5 ग्राम कॉपर ऑक्सीक्लोराइड + 1 पाउच स्ट्रेप्टोसाइक्लिन",
-      "market_price_approx": "₹160 per 500g",
+      "dosage_15l_tank_hi": "35 ग्राम कॉपर ऑक्सीक्लोराइड + 1 ग्राम स्ट्रेप्टोसाइक्लिन प्रति 15L पंप",
+      "generic_price": "₹170 per 500g",
+      "brand_price": "₹520 (Blitox)",
+      "savings_pct": 67,
+      "organic_alternative_hi": "नीम बीज अर्क 5% + गाय का ताजा गोबर छानकर उसका पानी स्प्रे करें।",
       "phi_days": 25,
-      "warning_hi": "यूरिया का छिड़काव तुरंत बंद कर दें।"
+      "warning_hi": "पत्तियों के किनारे से पीलापन शुरू होकर सूखता है। नाइट्रोजन (यूरिया) का प्रयोग तुरंत रोक दें।"
+    }
+  },
+  "Gram": {
+    "Pod Borer": {
+      "name_hi": "चना फली छेदक इल्ली (Gram Pod Borer - Helicoverpa)",
+      "type": "pest",
+      "chemical_salt": "Emamectin Benzoate 5% SG",
+      "dosage": "0.5 grams per litre of water",
+      "dosage_hi": "0.5 ग्राम प्रति लीटर पानी",
+      "dosage_15l_tank_hi": "7 से 8 ग्राम प्रति 15 लीटर ढोलकी पंप",
+      "generic_price": "₹220 per 100g",
+      "brand_price": "₹1,150 (Coragen / Proclaim)",
+      "savings_pct": 81,
+      "organic_alternative_hi": "HaNPV (Helicoverpa Nuclear Polyhedrosis Virus) 250 LE प्रति हेक्टेयर या 50ml नीम तेल प्रति 15L पंप।",
+      "phi_days": 14,
+      "warning_hi": "इल्ली फली में सिर घुसाकर दानों को चट कर जाती है। फूल आने के अंतिम चरण और फली बनते ही पहला छिड़काव शाम को करें।"
+    },
+    "Fusarium Wilt": {
+      "name_hi": "उकठा रोग (Fusarium Wilt)",
+      "type": "fungal",
+      "chemical_salt": "Trichoderma viride 1% WP (Biological) + Carbendazim 50% WP",
+      "dosage": "10 grams Trichoderma viride per kg seed or 2g Carbendazim per kg seed",
+      "dosage_hi": "10 ग्राम ट्राइकोडर्मा विरिडी या 2 ग्राम कार्बेन्डाजिम प्रति किलो बीज शोधन",
+      "dosage_15l_tank_hi": "बीज शोधन (Seed Treatment) - बुवाई के समय",
+      "generic_price": "₹120 per 500g",
+      "brand_price": "₹340 (Bavistin)",
+      "savings_pct": 65,
+      "organic_alternative_hi": "खेत में गोबर की खाद में मिलाकर 5 किलोग्राम ट्राइकोडर्मा प्रति एकड़ बुवाई से पहले बिखेरें।",
+      "phi_days": 60,
+      "warning_hi": "पौधे अचानक मुरझाकर सूख जाते हैं और जड़ें काली पड़ जाती हैं। एक ही खेत में लगातार चना न बोएं, फसल चक्र अपनाएं।"
     }
   }
 }

@@ -23,6 +23,12 @@ export default function FarmerView({ state, onRefresh }) {
   const [loadingTubewell, setLoadingTubewell] = useState(false);
   const [playingTubewellAudio, setPlayingTubewellAudio] = useState(false);
 
+  // Crop Doctor & ICAR Registry catalog state
+  const [doctorCrop, setDoctorCrop] = useState('Mustard');
+  const [catalogData, setCatalogData] = useState(null);
+  const [selectedDiseaseKey, setSelectedDiseaseKey] = useState('Aphids / Mahu');
+  const [loadingCatalog, setLoadingCatalog] = useState(false);
+
   // Leaf photo scanner state
   const [selectedLeafSample, setSelectedLeafSample] = useState(null);
   const [leafFilePreview, setLeafFilePreview] = useState(null);
@@ -131,10 +137,44 @@ export default function FarmerView({ state, onRefresh }) {
     setLoadingLots(false);
   };
 
+  const fetchCatalog = async () => {
+    setLoadingCatalog(true);
+    try {
+      const res = await fetch('/api/advisory/catalog');
+      if (res.ok) {
+        const data = await res.json();
+        setCatalogData(data.catalog || {});
+      }
+    } catch (e) {
+      console.warn('Catalog fetch error:', e);
+    }
+    setLoadingCatalog(false);
+  };
+
+  const handleSelectCatalogDisease = async (crop, diseaseKey) => {
+    setSelectedDiseaseKey(diseaseKey);
+    setAdvising(true);
+    try {
+      const res = await fetch('/api/advisory/prescribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ crop, disease: diseaseKey })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdvisoryResult(data);
+      }
+    } catch (e) {
+      console.warn('Prescribe error:', e);
+    }
+    setAdvising(false);
+  };
+
   useEffect(() => {
     fetchPrices();
     fetchFarmerLots();
     fetchTubewellAdvisory(tubewellCrop);
+    fetchCatalog();
   }, [activePhone]);
 
   const handlePhoneSwitch = (phone) => {
@@ -461,6 +501,67 @@ export default function FarmerView({ state, onRefresh }) {
               <div className="flex justify-between text-[11px] text-muted-fg">
                 <span>Loaded: {pool.current_loaded_kg || 1100} kg ({pool.current_loaded_quintals || 11} Qtl)</span>
                 <span>Target: {pool.target_capacity_kg || 1500} kg (15 Quintals Max)</span>
+              </div>
+            </div>
+
+            {/* Scheduled Agricultural Milk-Run Corridor & Route Timeline */}
+            <div className="mt-4 pt-3.5 border-t border-border space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="font-bold text-foreground">
+                    कृषि मिल्क-रन रूट (Scheduled Agricultural Milk-Run Corridor)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30">
+                    कट-ऑफ: आज शाम 6:00 बजे
+                  </span>
+                  <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
+                    प्रस्थान: कल सुबह 07:00 बजे
+                  </span>
+                </div>
+              </div>
+
+              {/* 3-Stop Milk-Run Route Timeline */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 text-[11px]">
+                <div className="p-2.5 bg-secondary/70 border border-border rounded-xl">
+                  <div className="flex items-center justify-between text-muted-fg text-[10px]">
+                    <span className="font-semibold">Stop #1 (07:15 AM)</span>
+                    <span className="text-emerald-500 dark:text-emerald-400 font-mono font-bold">✓ 5.0 Qtl</span>
+                  </div>
+                  <span className="font-bold text-foreground block mt-0.5">दिनेश छिल्लर</span>
+                  <span className="text-[10px] text-muted-fg">Kalanaur &bull; 10 कट्टे लोड</span>
+                </div>
+
+                <div className="p-2.5 bg-secondary/70 border border-border rounded-xl">
+                  <div className="flex items-center justify-between text-muted-fg text-[10px]">
+                    <span className="font-semibold">Stop #2 (08:00 AM)</span>
+                    <span className="text-emerald-500 dark:text-emerald-400 font-mono font-bold">✓ 6.0 Qtl</span>
+                  </div>
+                  <span className="font-bold text-foreground block mt-0.5">सुरेश कुमार</span>
+                  <span className="text-[10px] text-muted-fg">Bhalaut &bull; 12 कट्टे लोड</span>
+                </div>
+
+                <div className="p-2.5 bg-primary/15 border border-primary/40 rounded-xl relative overflow-hidden shadow-sm">
+                  <span className="absolute top-1 right-1 text-[8px] font-bold px-1 rounded bg-primary text-primary-foreground">
+                    आपका स्लॉट
+                  </span>
+                  <div className="flex items-center justify-between text-primary text-[10px]">
+                    <span className="font-bold">Stop #3 (खेत पिकअप)</span>
+                  </div>
+                  <span className="font-bold text-foreground block mt-0.5">{activeRole?.name || 'रामू शर्मा'}</span>
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-mono font-bold">कल सुबह 08:45 - 09:15 AM</span>
+                </div>
+
+                <div className="p-2.5 bg-secondary/70 border border-border rounded-xl">
+                  <div className="flex items-center justify-between text-muted-fg text-[10px]">
+                    <span className="font-semibold">Final APMC Mandi</span>
+                    <span className="text-sky-500 dark:text-sky-400 font-mono font-bold">10:45 AM</span>
+                  </div>
+                  <span className="font-bold text-foreground block mt-0.5">आज़ादपुर APMC मंडी</span>
+                  <span className="text-[10px] text-muted-fg">Gate #2 नीलामी पूर्व</span>
+                </div>
               </div>
             </div>
           </div>
@@ -822,6 +923,80 @@ export default function FarmerView({ state, onRefresh }) {
             <Sparkles className="w-6 h-6 text-primary" />
           </div>
 
+          {/* Multi-Crop Agronomic Doctor & Pesticide Advisor (5 Crops & Full ICAR Catalog) */}
+          <div className="p-4 bg-secondary/80 border border-border rounded-xl space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Sprout className="w-4 h-4 text-emerald-500" />
+                  ICAR बहु-फसल सुरक्षा व कीटनाशक डॉक्टर (5 Crops Protection)
+                </span>
+                <p className="text-[11px] text-muted-fg mt-0.5">
+                  फसल व बीमारी चुनें — पाएं असली टेक्निकल साल्ट, 15 लीटर ढोलकी नाप, जैविक विकल्प व 80% बचत!
+                </p>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-500/30">
+                100% Non-Commercial ICAR
+              </span>
+            </div>
+
+            {/* 5 Crop Selector Tabs */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {[
+                { key: 'Mustard', label: '🌿 सरसों (Mustard)' },
+                { key: 'Wheat', label: '🌾 गेहूँ (Wheat)' },
+                { key: 'Potato', label: '🥔 आलू (Potato)' },
+                { key: 'Paddy', label: '🌾 धान (Paddy)' },
+                { key: 'Gram', label: '🌱 चना (Gram)' }
+              ].map((c) => (
+                <button
+                  key={c.key}
+                  onClick={() => {
+                    setDoctorCrop(c.key);
+                    const diseases = catalogData?.[c.key] || {};
+                    const firstKey = Object.keys(diseases)[0];
+                    if (firstKey) handleSelectCatalogDisease(c.key, firstKey);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition whitespace-nowrap cursor-pointer active:scale-95 ${
+                    doctorCrop === c.key
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-card hover:bg-secondary text-muted-fg border border-border'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Registered Pest / Disease Chips for the selected crop */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              {Object.entries(catalogData?.[doctorCrop] || {
+                'Aphids / Mahu': { name_hi: 'माहू / चेपा कीट (Aphids)', type: 'pest', savings_pct: 79 },
+                'White Rust': { name_hi: 'सफेद रतुआ (White Rust)', type: 'fungal', savings_pct: 69 },
+                'Alternaria Blight': { name_hi: 'अल्टरनेरिया झुलसा', type: 'fungal', savings_pct: 64 },
+                'Painted Bug': { name_hi: 'चितकबरा कीड़ा', type: 'pest', savings_pct: 63 }
+              }).map(([dKey, dVal]) => {
+                const isSelected = selectedDiseaseKey === dKey;
+                const isPest = dVal.type === 'pest';
+                return (
+                  <button
+                    key={dKey}
+                    onClick={() => handleSelectCatalogDisease(doctorCrop, dKey)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer flex items-center gap-1.5 active:scale-95 ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white font-bold shadow-sm ring-2 ring-emerald-500/30'
+                        : 'bg-card hover:bg-secondary text-foreground border border-border'
+                    }`}
+                  >
+                    <span>{isPest ? '🐛' : '🦠'}</span>
+                    <span>{dVal.name_hi || dKey}</span>
+                    <span className="text-[10px] opacity-75 font-mono">({dVal.savings_pct || 75}% बचत)</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Preset Leaf Pathology Samples & Camera Upload */}
           <div className="p-4 bg-secondary/80 border border-border rounded-xl space-y-3">
             <div className="flex items-center justify-between">
@@ -959,27 +1134,70 @@ export default function FarmerView({ state, onRefresh }) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                <div className="p-3 bg-card rounded-lg border border-border">
-                  <span className="text-rose-700 dark:text-rose-400 font-bold block mb-1">Branded Commercial Chemical</span>
-                  <p className="text-foreground font-medium">{advisoryResult.branded_cocktail || 'Ridomil MZ / Proprietary Cocktails'}</p>
-                  <p className="text-muted-fg text-[11px] mt-1">Average Cost: ₹1,200 per acre</p>
+                <div className="p-3.5 bg-card rounded-xl border border-border">
+                  <span className="text-rose-700 dark:text-rose-400 font-bold block mb-1">
+                    महंगा ब्रांडेड कॉकटेल (MNC Branded Cocktail)
+                  </span>
+                  <p className="text-foreground font-semibold text-sm">
+                    {advisoryResult.prescription?.brand_price ? `ब्रांडेड दवा: ${advisoryResult.prescription.brand_price}` : (advisoryResult.branded_cocktail || 'Syngenta / Bayer Branded')}
+                  </p>
+                  <p className="text-muted-fg text-[11px] mt-1">Average Market Cost: ₹850 – ₹1,200 per acre</p>
                 </div>
 
-                <div className="p-3 bg-card rounded-lg border border-border">
-                  <span className="text-emerald-700 dark:text-emerald-400 font-bold block mb-1">ICAR Approved Generic Salt</span>
-                  <p className="text-foreground font-medium">
+                <div className="p-3.5 bg-card rounded-xl border border-emerald-500/30 bg-emerald-500/5">
+                  <span className="text-emerald-700 dark:text-emerald-400 font-bold block mb-1 flex items-center justify-between">
+                    <span>ICAR स्वीकृत जेनेरिक टेक्निकल साल्ट</span>
+                    <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 font-mono text-[10px] font-bold">
+                      {advisoryResult.prescription?.savings_pct || 80}% बचत
+                    </span>
+                  </span>
+                  <p className="text-foreground font-bold text-sm font-mono">
                     {advisoryResult.prescription?.chemical_salt || advisoryResult.generic_chemical || 'Mancozeb 75% WP'}
                   </p>
-                  <p className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px] mt-1">Direct Generic Cost: ₹240 per acre (80% Savings)</p>
+                  <p className="text-emerald-700 dark:text-emerald-400 font-bold text-[11px] mt-1">
+                    Direct Generic Cost: {advisoryResult.prescription?.generic_price || '₹180 – ₹240'} (दुकानदार से केवल यही मांगें)
+                  </p>
                 </div>
               </div>
 
-              <div className="p-3 bg-card rounded-lg border border-border text-xs space-y-1">
-                <span className="font-semibold text-primary block">Official ICAR Dosage & Spray Guidance:</span>
-                <p className="text-muted-fg">
-                  {advisoryResult.prescription?.dosage_hi || advisoryResult.prescription?.dosage || advisoryResult.dosage || 'Dissolve 2.0g Mancozeb per 1 Liter of clean water (approx. 500g in 200L water per acre). Spray during calm morning hours with standard knapsack flat-fan nozzle.'}
-                </p>
+              {/* Exact 15L Knapsack Pump Dilution & Spray Advice */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div className="p-3 bg-card rounded-xl border border-border space-y-1">
+                  <span className="font-bold text-primary block flex items-center gap-1.5">
+                    <span>💧</span>
+                    <span>15 लीटर ढोलकी पंप नाप (15L Spray Tank Dosage):</span>
+                  </span>
+                  <p className="text-foreground font-semibold text-xs">
+                    {advisoryResult.prescription?.dosage_15l_tank_hi || '35 से 40 ग्राम प्रति 15 लीटर ढोलकी पंप'}
+                  </p>
+                  <p className="text-[11px] text-muted-fg">
+                    {advisoryResult.prescription?.dosage_hi || advisoryResult.prescription?.dosage || '2 ग्राम प्रति लीटर पानी'}
+                  </p>
+                </div>
+
+                <div className="p-3 bg-card rounded-xl border border-border space-y-1">
+                  <span className="font-bold text-emerald-600 dark:text-emerald-400 block flex items-center gap-1.5">
+                    <span>🌿</span>
+                    <span>जैविक व घरेलू विकल्प (Organic / Bio Remedy):</span>
+                  </span>
+                  <p className="text-muted-fg text-xs">
+                    {advisoryResult.prescription?.organic_alternative_hi || 'नीम का तेल (10,000 PPM) 40ml प्रति 15 लीटर पानी या ट्राइकोडर्मा विरिडी 50 ग्राम।'}
+                  </p>
+                </div>
               </div>
+
+              {/* Safety & Spray Timing Warning */}
+              {advisoryResult.prescription?.warning_hi && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-xl text-xs space-y-1">
+                  <span className="font-bold text-amber-600 dark:text-amber-400 block flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>ICAR छिड़काव व मधुमक्खी सुरक्षा निर्देश:</span>
+                  </span>
+                  <p className="text-foreground text-[11px]">
+                    {advisoryResult.prescription.warning_hi}
+                  </p>
+                </div>
+              )}
 
               {(advisoryResult.audio_prescription_hi || advisoryResult.spoken_text_hi || advisoryResult.audio_base64) && (
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-primary/10 rounded-xl border border-primary/25">
