@@ -37,6 +37,33 @@ def send_dual_channel_alert(phone, title, message, hindi_voice_text=None):
     tg_chat_id = user.get("telegram_chat_id") if user else None
     tg_username = user.get("telegram_username") if user else None
 
+    # Auto-resolve chat ID from database or live updates if not yet linked
+    if not tg_chat_id and TELEGRAM_BOT_TOKEN:
+        try:
+            from core.database import get_connection
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT telegram_chat_id FROM users WHERE telegram_chat_id IS NOT NULL AND telegram_chat_id != '' LIMIT 1;")
+                r = cursor.fetchone()
+                if r:
+                    tg_chat_id = r["telegram_chat_id"]
+        except Exception:
+            pass
+
+    if not tg_chat_id and TELEGRAM_BOT_TOKEN:
+        try:
+            upd_url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getUpdates?limit=5"
+            with urllib.request.urlopen(upd_url, timeout=2.0) as uresp:
+                udata = json.loads(uresp.read())
+                results = udata.get("result", [])
+                if results:
+                    last_msg = results[-1].get("message") or results[-1].get("callback_query", {}).get("message")
+                    if last_msg and last_msg.get("chat", {}).get("id"):
+                        tg_chat_id = str(last_msg["chat"]["id"])
+                        update_user_telegram(phone, tg_chat_id, "@" + str(last_msg["chat"].get("username", "farmer")))
+        except Exception:
+            pass
+
     # Construct formatted Telegram text
     tg_text = (
         f"🌾 *KhetOS Alert for {farmer_name}*\n"

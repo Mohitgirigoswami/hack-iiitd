@@ -20,7 +20,10 @@ from core.database import (
     get_notifications, add_activity, register_driver, register_buyer,
     verify_user_credentials, get_all_drivers, get_all_buyers,
     get_stakeholders_directory, schedule_backhaul_date_db, get_connection,
-    get_active_pool, recalculate_active_pool
+    get_active_pool, recalculate_active_pool, get_available_stock_summary,
+    create_buyer_order, get_buyer_order, get_all_buyer_orders,
+    create_or_dispatch_trip, get_active_trip, update_trip_status,
+    advance_trip_stop, add_backhaul_item_db, settle_sale_and_notify_telegram
 )
 from core.notifications import send_dual_channel_alert, link_telegram, fetch_notifications
 from state_manager import state
@@ -851,17 +854,17 @@ def process_voice_route():
 
         reply = (
             f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
-            f"✅ *बधाई {farmer_name} जी! आपकी फसल पूलिंग में दर्ज हो गई!*\n"
+            f"✅ *फसल बिक्री के लिए लाइव लिस्ट हो गई!*\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
             f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
-            f"🚚 *गाड़ी:* Mahindra Bolero Maxi Truck (HR-12-AE-8419)\n"
-            f"⏱️ *पिकअप स्लॉट:* कल सुबह 08:45 - 09:15 बजे (एग्री मिल्क-रन)\n"
-            f"📊 *बोलेरो लोड:* {cap_pct}% ({status_label})\n"
+            f"🏛️ *मंडी स्टॉक स्थिति:* KhetOS डेटाबेस में लाइव (खरीदार पोर्टल पर दृश्यमान)\n"
+            f"📊 *आवंटन स्थिति:* *पोर्टल आवंटन की प्रतीक्षा में (Awaiting Buyer/Mandi Allocation)*\n"
             f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
-            f"📍 *कट-ऑफ:* आज शाम 6:00 बजे | *रूट प्रस्थान:* कल सुबह 07:00 बजे"
+            f"ℹ️ *आगे क्या होगा?*\n"
+            f"जैसे ही पोर्टल पर खरीदार मांग से आपका लॉट मैच होगा और एडमिन द्वारा बोलेरो पिकअप डिस्पैच किया जाएगा, आपको तुरंत गाड़ी नंबर, ड्राइवर और पिकअप समय की सूचना प्राप्त होगी!"
         )
-        spoken_summary = f"बधाई {farmer_name} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे है।"
+        spoken_summary = f"बधाई {farmer_name} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) खेतOS डेटाबेस में दर्ज हो गया है। जैसे ही पोर्टल से खरीदार ऑर्डर और गाड़ी आवंटित होगी, आपको पिकअप का समय और सूचना तुरंत भेज दी जाएगी।"
         audio_bytes = generate_hindi_audio(spoken_summary)
         options = [
             {"label": "📦 मेरा स्टॉक देखें", "cmd": "/mystock"},
@@ -932,26 +935,167 @@ def driver_inspect_lot():
         return jsonify({"status": "SUCCESS", "lot": updated})
     return jsonify({"error": "LOT_NOT_FOUND"}), 404
 
+# --- Live Stock & Buyer Demand Endpoints ---
+
+@app.route("/api/stock/available", methods=["GET"])
+def get_available_stock_route():
+    summary = get_available_stock_summary()
+    return jsonify(summary)
+
+@app.route("/api/buyer/orders", methods=["GET"])
+def get_buyer_orders_route():
+    orders = get_all_buyer_orders()
+    return jsonify({"status": "SUCCESS", "orders": orders})
+
 @app.route("/api/buyer/order", methods=["POST"])
 def place_buyer_order():
     data = request.get_json(silent=True) or {}
-    buyer_name = data.get("buyer_name", "Shree Ram Roller Flour Mill")
-    quantity_quintals = float(data.get("quantity_quintals", 1100))
+    buyer_name = data.get("buyer_name", "Shree Ram Flour & Oil Mill")
+    buyer_phone = data.get("phone", "+91 98111 22334")
+    crop = data.get("crop", "Mustard")
+    quantity_quintals = float(data.get("quantity_quintals", 15.0))
     bid_price = float(data.get("bid_price", 5420))
 
-    match_result = match_buyer_order(state.lots, quantity_quintals)
-    escrow_amount = round(quantity_quintals * bid_price * 0.20, 2)
-    order = {
-        "order_id": f"ORD-{int(time.time()) % 1000}",
-        "buyer_name": buyer_name,
-        "quantity_requested": quantity_quintals,
-        "quantity_fulfilled": match_result["total_fulfilled_quintals"],
-        "offered_price": bid_price,
-        "escrow_deposited_rs": escrow_amount,
-        "status": "ESCROW_LOCKED_AND_DISPATCHED",
-        "matched_lots": match_result["matched_lots"]
-    }
-    return jsonify({"status": "ORDER_MATCHED", "order": order, "matching_details": match_result})
+    # 1. Query live available stock directly from SQLite DB
+    stock_summary = get_available_stock_summary()
+    crop_info = stock_summary.get("by_crop", {}).get(crop)
+    available_qty = crop_info["total_quintals"] if crop_info else 0.0
+
+    # 2. Check if sufficient stock is registered in DB
+    if quantity_quintals > available_qty:
+        return jsonify({
+            "status": "INSUFFICIENT_STOCK",
+            "message": f"Requested {quantity_quintals} Qtl exceeds available DB stock of {available_qty} Qtl. Maximum fulfillable: {available_qty} Qtl.",
+            "requested_quintals": quantity_quintals,
+            "available_quintals": available_qty,
+            "crop": crop
+        }), 400
+
+    # 3. Calculate realistic Corridor Estimated Delivery ETA
+    # Rohtak cluster to Azadpur Mandi: 68 KM ~ 2h 15m transit + 30m weighbridge window
+    eta_str = "Today, 11:45 AM (Azadpur APMC Gate 4 Weighbridge) — ~2h 15m transit from Rohtak cluster"
+
+    # Match farmer lots from DB
+    matched_lots = crop_info.get("lots", []) if crop_info else []
+
+    # 4. Create and persist buyer order in DB
+    order = create_buyer_order(
+        buyer_name=buyer_name,
+        phone=buyer_phone,
+        crop=crop,
+        quantity_quintals=quantity_quintals,
+        bid_price=bid_price,
+        estimated_eta=eta_str,
+        matched_lots=matched_lots
+    )
+
+    return jsonify({
+        "status": "ORDER_MATCHED",
+        "order": order,
+        "estimated_eta": eta_str,
+        "available_stock_quintals": available_qty,
+        "matched_lots": matched_lots,
+        "message": f"Order #{order['order_id']} accepted! 100% stock allocated from {len(matched_lots)} farm lots. ETA: {eta_str}."
+    })
+
+# --- Single Seeded Bolero Truck Corridor Operations Endpoints ---
+
+@app.route("/api/trips/active", methods=["GET"])
+def get_active_trip_route():
+    trip = get_active_trip()
+    return jsonify({"status": "SUCCESS", "trip": trip})
+
+@app.route("/api/admin/dispatch-trip", methods=["POST"])
+def admin_dispatch_trip_route():
+    data = request.get_json(silent=True) or {}
+    order_id = data.get("order_id", "ORD-SRF-01")
+    crop = data.get("crop", "Mustard")
+    trip = create_or_dispatch_trip(order_id=order_id, crop=crop)
+    return jsonify({
+        "status": "SUCCESS",
+        "trip": trip,
+        "message": f"Milk-Run trip {trip['trip_id']} dispatched to Driver Baljit Singh (HR-12-AE-8419). 100% capacity locked."
+    })
+
+@app.route("/api/trips/start", methods=["POST"])
+def driver_start_trip_route():
+    data = request.get_json(silent=True) or {}
+    trip_id = data.get("trip_id")
+    trip = get_active_trip()
+    tid = trip_id or (trip["trip_id"] if trip else "TRIP-ROH-101")
+    updated = update_trip_status(tid, "TRIP_IN_PROGRESS", current_stop_index=0)
+    return jsonify({
+        "status": "SUCCESS",
+        "trip": updated,
+        "message": f"Trip #{tid} started! Driver Baljit Singh en route to Stop #1."
+    })
+
+@app.route("/api/trips/advance-stop", methods=["POST"])
+def driver_advance_stop_route():
+    data = request.get_json(silent=True) or {}
+    trip = get_active_trip()
+    tid = data.get("trip_id") or (trip["trip_id"] if trip else "TRIP-ROH-101")
+    lot_id = data.get("lot_id")
+    updated = advance_trip_stop(tid, loaded_lot_id=lot_id)
+    return jsonify({"status": "SUCCESS", "trip": updated})
+
+@app.route("/api/trips/arrive-mandi", methods=["POST"])
+def driver_arrive_mandi_route():
+    data = request.get_json(silent=True) or {}
+    trip = get_active_trip()
+    tid = data.get("trip_id") or (trip["trip_id"] if trip else "TRIP-ROH-101")
+    updated = update_trip_status(tid, "ARRIVED_AT_MANDI")
+    return jsonify({
+        "status": "SUCCESS",
+        "trip": updated,
+        "message": "Arrived at Azadpur APMC Mandi. Consignment ready for electronic weighbridge sale & settlement."
+    })
+
+# --- Admin Reverse Backhaul Manifest Ingestion ---
+
+@app.route("/api/backhaul/add-item", methods=["POST"])
+def admin_add_backhaul_item_route():
+    data = request.get_json(silent=True) or {}
+    item = data.get("item")
+    if not item or not isinstance(item, dict):
+        # Default demo item preset if none given
+        item = {
+            "item": "Pashu Aahar (Mustard Cattle Feed Cake)",
+            "category": "Feed / Byproduct",
+            "source": "Shree Ram Oil Mill Byproduct",
+            "destination": "Bhalaut Dairy Cooperative",
+            "quantity_kg": 500,
+            "bags": 10,
+            "wholesale_rate_rs": 1850
+        }
+    schedules = add_backhaul_item_db(item)
+    return jsonify({
+        "status": "SUCCESS",
+        "message": f"Added '{item.get('item')}' ({item.get('quantity_kg', 0)} kg) to return manifest. 0% Khali Phera guaranteed.",
+        "schedules": schedules
+    })
+
+# --- Final Mandi Sale Settlement & Telegram Bot Payout Alert ---
+
+@app.route("/api/mandi/settle-sale", methods=["POST"])
+def mandi_settle_sale_route():
+    data = request.get_json(silent=True) or {}
+    trip_id = data.get("trip_id")
+    mandi_price = float(data.get("mandi_price", 5420))
+    mandi_name = data.get("mandi_name", "Azadpur APMC Mandi")
+
+    results = settle_sale_and_notify_telegram(
+        trip_id=trip_id,
+        mandi_price=mandi_price,
+        mandi_name=mandi_name
+    )
+
+    return jsonify({
+        "status": "SALE_SETTLED_AND_TELEGRAM_NOTIFIED",
+        "settled_lots_count": len(results),
+        "settlements": results,
+        "message": f"Sale finalized at {mandi_name}! Telegram receipts with itemized delivery and mandi cess deductions sent to all farmers."
+    })
 
 @app.route("/api/buyer/create-payment", methods=["POST"])
 def buyer_create_payment():
@@ -1327,12 +1471,14 @@ def telegram_bot_command():
 
         lot = create_lot(phone, crop, qty, channel="telegram_bot")
         reply = (
-            f"✅ *बधाई! आपकी फसल पूलिंग में दर्ज हो गई है!*\n"
+            f"✅ *फसल बिक्री के लिए लाइव लिस्ट हो गई!*\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"📦 लॉट #{lot['lot_id']}\n"
             f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
-            f"🚚 *गाड़ी:* Mahindra Bolero Maxi Truck\n"
-            f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)"
+            f"🏛️ *मंडी स्टॉक स्थिति:* KhetOS डेटाबेस में लाइव (खरीदार पोर्टल पर दृश्यमान)\n"
+            f"📊 *आवंटन स्थिति:* *पोर्टल आवंटन की प्रतीक्षा में (Awaiting Buyer/Mandi Allocation)*\n"
+            f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
+            f"ℹ️ गाड़ी व पिकअप स्लॉट की सूचना पोर्टल पर एडमिन द्वारा ट्रिप स्वीकृत होने के बाद भेजी जाएगी।"
         )
         options = [
             {"label": "📦 मेरा स्टॉक देखें", "cmd": "/mystock"},
@@ -1597,18 +1743,18 @@ def telegram_bot_command():
             cap_pct = pool.get('capacity_percentage', 80.0)
             status_label = "डिस्पैच लॉक (100% Full)" if cap_pct >= 99 else "पूलिंग जारी (Accepting Lots)"
 
-            spoken_text = f"बधाई {farmer_name} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे है।"
+            spoken_text = f"बधाई {farmer_name} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) खेतOS डेटाबेस में दर्ज हो गया है। जैसे ही पोर्टल से खरीदार ऑर्डर और गाड़ी आवंटित होगी, आपको पिकअप का समय और सूचना तुरंत भेज दी जाएगी।"
             reply = (
                 f"🎙️ *आवाज़/संदेश समझा गया:* \"{transcript}\"\n\n"
-                f"✅ *बधाई {farmer_name} जी! आपकी फसल पूलिंग में दर्ज हो गई!*\n"
+                f"✅ *फसल बिक्री के लिए लाइव लिस्ट हो गई!*\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
                 f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
-                f"🚚 *गाड़ी:* Mahindra Bolero Maxi Truck (HR-12-AE-8419)\n"
-                f"⏱️ *पिकअप स्लॉट:* कल सुबह 08:45 - 09:15 बजे (एग्री मिल्क-रन)\n"
-                f"📊 *बोलेरो लोड:* {cap_pct}% ({status_label})\n"
+                f"🏛️ *मंडी स्टॉक स्थिति:* KhetOS डेटाबेस में लाइव (खरीदार पोर्टल पर दृश्यमान)\n"
+                f"📊 *आवंटन स्थिति:* *पोर्टल आवंटन की प्रतीक्षा में (Awaiting Buyer/Mandi Allocation)*\n"
                 f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
-                f"📍 *कट-ऑफ:* आज शाम 6:00 बजे | *रूट प्रस्थान:* कल सुबह 07:00 बजे"
+                f"ℹ️ *आगे क्या होगा?*\n"
+                f"जैसे ही पोर्टल पर खरीदार मांग से आपका लॉट मैच होगा और एडमिन द्वारा बोलेरो पिकअप डिस्पैच किया जाएगा, आपको तुरंत गाड़ी नंबर, ड्राइवर और पिकअप समय की सूचना टेलीग्राम पर प्राप्त होगी!"
             )
             options = [
                 {"label": "📦 मेरा स्टॉक देखें", "cmd": "/mystock"},

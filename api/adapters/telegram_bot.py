@@ -426,24 +426,21 @@ def init_telegram_bot(token=None):
 
         # Create lot in SQLite database
         lot = create_lot(phone, crop, qty, channel="telegram_bot")
-        pool = get_active_pool() or state.active_pool
-        cap_pct = pool.get('capacity_percentage', 80.0)
-        status_label = "डिस्पैच लॉक (100% Full)" if cap_pct >= 99 else "पूलिंग जारी (Accepting Lots)"
 
         reply_text = (
-            f"✅ *बधाई! आपकी फसल पूलिंग में दर्ज हो गई है!*\n"
+            f"✅ *फसल बिक्री के लिए लाइव लिस्ट हो गई!*\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
             f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
-            f"🚚 *गाड़ी:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')}\n"
-            f"⏱️ *पिकअप स्लॉट:* कल सुबह 08:45 - 09:15 बजे (एग्री मिल्क-रन)\n"
-            f"📊 *बोलेरो क्षमता:* *{cap_pct}%* ({status_label})\n"
+            f"🏛️ *मंडी स्टॉक स्थिति:* KhetOS डेटाबेस में लाइव (खरीदार पोर्टल पर दृश्यमान)\n"
+            f"📊 *आवंटन स्थिति:* *पोर्टल आवंटन की प्रतीक्षा में (Awaiting Buyer/Mandi Allocation)*\n"
             f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
-            f"📍 *कट-ऑफ:* आज शाम 6:00 बजे | *रूट प्रस्थान:* कल सुबह 07:00 बजे रोहतक हब से"
+            f"ℹ️ *आगे क्या होगा?*\n"
+            f"जैसे ही APMC मंडी पोर्टल / खरीदार मांग से आपका लॉट मैच होगा और एडमिन द्वारा बोलेरो पिकअप रूट लॉक किया जाएगा, आपको तुरंत गाड़ी नंबर, ड्राइवर और पिकअप समय की सूचना भेजी जाएगी!"
         )
         bot.reply_to(message, reply_text, parse_mode="Markdown", reply_markup=get_post_lot_inline(lot['lot_id'], crop))
 
-        spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे निर्धारित है।"
+        spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) खेतOS डेटाबेस में दर्ज हो गया है। जैसे ही पोर्टल से खरीदार ऑर्डर और गाड़ी आवंटित होगी, आपको पिकअप का समय और सूचना तुरंत भेज दी जाएगी।"
         dispatch_voice_safe(bot, message.chat.id, spoken)
 
     # 6. /dellot command handler
@@ -662,18 +659,18 @@ def init_telegram_bot(token=None):
 
                 reply_text = (
                     f"🎙️ *आवाज़ समझी गई:* \"{transcript}\"\n\n"
-                    f"✅ *बधाई! आपकी फसल पूलिंग में दर्ज हो गई है!*\n"
+                    f"✅ *फसल बिक्री के लिए लाइव लिस्ट हो गई!*\n"
                     f"━━━━━━━━━━━━━━━━━━\n"
                     f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
                     f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
-                    f"🚚 *गाड़ी:* Mahindra Bolero Maxi Truck (HR-12-AE-8419)\n"
-                    f"⏱️ *पिकअप स्लॉट:* कल सुबह 08:45 - 09:15 बजे (एग्री मिल्क-रन)\n"
-                    f"📊 *बोलेरो लोड:* {cap_pct}% ({status_label})\n"
+                    f"🏛️ *मंडी स्टॉक स्थिति:* KhetOS डेटाबेस में लाइव (खरीदार पोर्टल पर दृश्यमान)\n"
+                    f"📊 *आवंटन स्थिति:* *पोर्टल आवंटन की प्रतीक्षा में (Awaiting Buyer/Mandi Allocation)*\n"
                     f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
-                    f"📍 *कट-ऑफ:* आज शाम 6:00 बजे | *रूट प्रस्थान:* कल सुबह 07:00 बजे"
+                    f"ℹ️ *आगे क्या होगा?*\n"
+                    f"जैसे ही पोर्टल पर खरीदार मांग से आपका लॉट मैच होगा और एडमिन द्वारा बोलेरो पिकअप डिस्पैच किया जाएगा, आपको तुरंत गाड़ी नंबर, ड्राइवर और पिकअप समय की सूचना टेलीग्राम पर प्राप्त होगी!"
                 )
                 bot.reply_to(message, reply_text, parse_mode="Markdown", reply_markup=get_post_lot_inline(lot['lot_id'], crop))
-                spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। आपका पिकअप स्लॉट कल सुबह 8:45 से 9:15 बजे है।"
+                spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) खेतOS डेटाबेस में दर्ज हो गया है। जैसे ही पोर्टल से खरीदार ऑर्डर और गाड़ी आवंटित होगी, आपको पिकअप का समय और सूचना तुरंत भेज दी जाएगी।"
                 dispatch_voice_safe(bot, chat_id, spoken)
 
         except Exception as e:
@@ -795,18 +792,19 @@ def init_telegram_bot(token=None):
             pool = get_active_pool() or state.active_pool
 
             reply_text = (
-                f"✅ *बधाई {user['name']} जी! आपकी फसल पूलिंग में दर्ज हो गई!*\n"
+                f"✅ *फसल बिक्री के लिए लाइव लिस्ट हो गई!*\n"
                 f"━━━━━━━━━━━━━━━━━━\n"
                 f"📦 *लॉट आईडी:* `#{lot['lot_id']}`\n"
                 f"🌾 *फसल:* {lot['crop']} ({lot['quantity_quintals']:.1f} क्विंटल / {lot['bags_count']} बोरी)\n"
-                f"🚚 *गाड़ी:* {pool.get('transporter', 'Mahindra Bolero Maxi Truck')}\n"
-                f"📊 *बोलेरो लोड:* *{pool.get('capacity_percentage', 100)}% FULL* ({pool.get('status', 'FULL_DISPATCH_LOCKED')})\n"
-                f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम)\n\n"
-                f"🎉 *बोलेरो गाड़ी भर चुकी है और आज़ादपुर मंडी के लिए लॉक हो गई है!*"
+                f"🏛️ *मंडी स्टॉक स्थिति:* KhetOS डेटाबेस में लाइव (खरीदार पोर्टल पर दृश्यमान)\n"
+                f"📊 *आवंटन स्थिति:* *पोर्टल आवंटन की प्रतीक्षा में (Awaiting Buyer/Mandi Allocation)*\n"
+                f"💰 *अतिरिक्त मुनाफा:* +₹{lot['extra_profit_rs']:.0f} (बिचौलिये से बचाई रकम!)\n\n"
+                f"ℹ️ *आगे क्या होगा?*\n"
+                f"जैसे ही APMC मंडी पोर्टल / खरीदार मांग से आपका लॉट मैच होगा और एडमिन द्वारा बोलेरो पिकअप रूट लॉक किया जाएगा, आपको तुरंत गाड़ी नंबर, ड्राइवर और पिकअप समय की सूचना भेजी जाएगी!"
             )
             bot.send_message(chat_id, reply_text, parse_mode="Markdown", reply_markup=get_post_lot_inline(lot['lot_id'], crop))
 
-            spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) दर्ज हो गया है। बोलेरो गाड़ी {pool.get('capacity_percentage', 100)}% भर चुकी है।"
+            spoken = f"बधाई {user['name']} जी! आपका {lot['bags_count']} बोरी ({qty} क्विंटल {crop}) खेतOS डेटाबेस में दर्ज हो गया है। जैसे ही पोर्टल से खरीदार ऑर्डर और गाड़ी आवंटित होगी, आपको पिकअप का समय और सूचना तुरंत भेज दी जाएगी।"
             dispatch_voice_safe(bot, chat_id, spoken)
 
         # Flow C: Mandi Crop Selected
