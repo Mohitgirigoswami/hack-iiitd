@@ -279,13 +279,79 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
     }
   };
 
+  const handleSendLeafImage = async (dataUrl, fileName = 'पत्ती की तस्वीर') => {
+    setShowPhotoModal(false);
+    const userMsg = {
+      id: Date.now(),
+      sender: 'user',
+      text: `📸 [पत्ती फोटो]: "${fileName}" (ऑटो विज़न AI पहचान)`,
+      imagePreview: dataUrl,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setLoading(true);
+
+    try {
+      // Autonomous Zero-Memory AI Vision Scan: crop is None so AI detects both crop and disease
+      const res = await fetch('/api/advisory/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image_base64: dataUrl
+        })
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const p = data.prescription || {};
+      const cropDetected = data.detected_crop || p.crop || 'सरसों';
+
+      const replyText = 
+        `📸 *फसल पत्ती रोग जांच रिपोर्ट (ICAR AI Doctor - ऑटो विज़न)*\n` +
+        `━━━━━━━━━━━━━━━━━━\n` +
+        `🌾 *पहचानी गई फसल:* *${cropDetected}*\n` +
+        `🦠 *रोग/कीट:* *${p.disease_name || data.detected_disease}*\n` +
+        `🧪 *असली टेक्निकल साल्ट:* \`${p.chemical_salt}\`\n` +
+        `⚖️ *15L ढोलकी नाप:* *${p.dosage_15l_tank_hi || p.dosage_hi}*\n` +
+        `💰 *अनुमानित खर्च:* जेनेरिक ${p.generic_price || '₹180'} vs ब्रांडेड ${p.brand_price || '₹850'} (*~${p.savings_pct || 75}% बचत*)\n` +
+        `🌱 *जैविक विकल्प:* ${p.organic_alternative_hi || 'नीम का तेल (10,000 PPM)'}\n\n` +
+        `⚠️ *सुरक्षा चेतावनी:* ${p.warning_hi}`;
+
+      const botMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: replyText,
+        audio_base64: data.audio_base64,
+        options: [
+          { label: `🌾 ${cropDetected} पूलिंग में जोड़ें`, cmd: `/lotcrop ${cropDetected.toLowerCase()}` },
+          { label: '🚿 ट्यूबवेल सलाह', cmd: `/tubewell ${cropDetected.toLowerCase()}` },
+          { label: '📈 मंडी भाव', cmd: `/mandi ${cropDetected.toLowerCase()}` }
+        ],
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      console.error('Leaf scan error:', err);
+      const errMsg = {
+        id: Date.now() + 1,
+        sender: 'bot',
+        text: '⚠️ फोटो स्कैन करने में त्रुटि हुई। कृपया पुनः प्रयास करें।',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      };
+      setMessages((prev) => [...prev, errMsg]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCustomFileUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target.result;
-      handleSendPhoto('Mustard', 'White Rust', file.name, dataUrl);
+      // Autonomous Zero-Memory Image Scan (Farmer does NOT need to know crop or disease)
+      handleSendLeafImage(dataUrl, file.name);
     };
     reader.readAsDataURL(file);
   };
@@ -465,29 +531,55 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
             रोगग्रस्त पत्ती का नमूना चुनें या कैमरे से तस्वीर अपलोड करें:
           </p>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             <button
               onClick={() => handleSendPhoto('Mustard', 'White Rust', 'सरसों सफेद रतुआ (White Rust)', 'https://images.unsplash.com/photo-1597848212624-a19eb35e2651?w=400&auto=format&fit=crop&q=80')}
-              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-emerald-500/50 rounded-xl text-left transition flex flex-col justify-between"
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-amber-500/50 rounded-xl text-left transition flex flex-col justify-between"
             >
-              <span className="text-[11px] font-bold text-white block">🌿 सरसों पत्ती</span>
-              <span className="text-[9px] text-amber-400 mt-1">White Rust</span>
+              <span className="text-[11px] font-bold text-white block">🟡 सरसों (Mustard)</span>
+              <span className="text-[9px] text-amber-400 mt-1">सफेद रतुआ / माहू</span>
             </button>
 
             <button
               onClick={() => handleSendPhoto('Wheat', 'Yellow Rust', 'गेहूँ पीला रतुआ (Yellow Rust)', 'https://images.unsplash.com/photo-1500937386664-56d1dfef3854?w=400&auto=format&fit=crop&q=80')}
-              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-emerald-500/50 rounded-xl text-left transition flex flex-col justify-between"
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-yellow-500/50 rounded-xl text-left transition flex flex-col justify-between"
             >
-              <span className="text-[11px] font-bold text-white block">🌾 गेहूँ पत्ती</span>
-              <span className="text-[9px] text-yellow-400 mt-1">Yellow Rust</span>
+              <span className="text-[11px] font-bold text-white block">🌾 गेहूँ (Wheat)</span>
+              <span className="text-[9px] text-yellow-400 mt-1">पीला रतुआ / दीमक</span>
             </button>
 
             <button
               onClick={() => handleSendPhoto('Potato', 'Late Blight', 'आलू झुलसा रोग (Late Blight)', 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-rose-500/50 rounded-xl text-left transition flex flex-col justify-between"
+            >
+              <span className="text-[11px] font-bold text-white block">🥔 आलू (Potato)</span>
+              <span className="text-[9px] text-rose-400 mt-1">पिछेता झुलसा / कीट</span>
+            </button>
+
+            <button
+              onClick={() => handleSendPhoto('Paddy', 'Brown Planthopper', 'धान भूरा फुदका कीट (BPH)', 'https://images.unsplash.com/photo-1536657464919-892534f60d6e?w=400&auto=format&fit=crop&q=80')}
               className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-emerald-500/50 rounded-xl text-left transition flex flex-col justify-between"
             >
-              <span className="text-[11px] font-bold text-white block">🥔 आलू पत्ती</span>
-              <span className="text-[9px] text-rose-400 mt-1">Late Blight</span>
+              <span className="text-[11px] font-bold text-white block">🌾 धान (Paddy)</span>
+              <span className="text-[9px] text-emerald-400 mt-1">भूरा फुदका / ब्लास्ट</span>
+            </button>
+
+            <button
+              onClick={() => handleSendPhoto('Gram', 'Pod Borer', 'चना फली छेदक इल्ली (Pod Borer)', 'https://images.unsplash.com/photo-1511497584788-87676104235f?w=400&auto=format&fit=crop&q=80')}
+              className="p-2 bg-[#253547] hover:bg-[#2d4057] border border-[#374e69] hover:border-lime-500/50 rounded-xl text-left transition flex flex-col justify-between"
+            >
+              <span className="text-[11px] font-bold text-white block">🌱 चना (Gram)</span>
+              <span className="text-[9px] text-lime-400 mt-1">फली छेदक इल्ली / उकठा</span>
+            </button>
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="p-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/50 rounded-xl text-left transition flex flex-col justify-between"
+            >
+              <span className="text-[11px] font-bold text-emerald-300 flex items-center gap-1">
+                <Camera className="w-3.5 h-3.5" /> फोटो स्कैन
+              </span>
+              <span className="text-[9px] text-emerald-400 mt-1">AI विज़न ऑटो-पहचान</span>
             </button>
           </div>
 
@@ -501,10 +593,10 @@ export default function TelegramBotSimulator({ activePhone, onRefresh }) {
             />
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-full py-1.5 px-3 bg-[#2b415a] hover:bg-[#344f6d] border border-[#3d5a7d] text-[#64b5f6] rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-1.5"
+              className="w-full py-2 px-3 bg-[#2b415a] hover:bg-[#344f6d] border border-[#3d5a7d] hover:border-emerald-500/60 text-white rounded-xl text-[11px] font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
-              <Upload className="w-3.5 h-3.5" />
-              <span>अपने फोन/कैमरे से फोटो अपलोड करें</span>
+              <Upload className="w-4 h-4 text-emerald-400" />
+              <span>अपने फोन/कैमरे से किसी भी पत्ती की फोटो अपलोड करें (AI विज़न ऑटो-पहचान)</span>
             </button>
           </div>
         </div>

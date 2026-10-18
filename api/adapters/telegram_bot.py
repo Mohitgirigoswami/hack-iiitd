@@ -203,17 +203,27 @@ def get_stock_management_inline(lots):
     return markup
 
 def get_crop_doctor_inline():
-    """Common symptoms and pests for instant 1-tap ICAR diagnosis."""
-    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    """5-Crop Selection Menu for ICAR Doctor."""
+    markup = telebot.types.InlineKeyboardMarkup(row_width=2)
     markup.add(
-        telebot.types.InlineKeyboardButton("🌿 सरसों — माहू / चेपा कीट (Aphids)", callback_data="doctor_select:Mustard:Aphids / Mahu"),
-        telebot.types.InlineKeyboardButton("🌿 सरसों — सफेद रतुआ (White Rust)", callback_data="doctor_select:Mustard:White Rust"),
-        telebot.types.InlineKeyboardButton("🌾 गेहूँ — पीला रतुआ (Yellow Rust)", callback_data="doctor_select:Wheat:Yellow Rust"),
-        telebot.types.InlineKeyboardButton("🌾 गेहूँ — दीमक नियंत्रण (Termites)", callback_data="doctor_select:Wheat:Termites"),
-        telebot.types.InlineKeyboardButton("🥔 आलू — पिछेता झुलसा (Late Blight)", callback_data="doctor_select:Potato:Late Blight"),
-        telebot.types.InlineKeyboardButton("🌾 धान — तना छेदक कीट (Stem Borer)", callback_data="doctor_select:Paddy:Stem Borer"),
-        telebot.types.InlineKeyboardButton("🌱 चना — फली छेदक इल्ली (Pod Borer)", callback_data="doctor_select:Gram:Pod Borer")
+        telebot.types.InlineKeyboardButton("🟡 सरसों (Mustard)", callback_data="doctor_crop:Mustard"),
+        telebot.types.InlineKeyboardButton("🌾 गेहूँ (Wheat)", callback_data="doctor_crop:Wheat"),
+        telebot.types.InlineKeyboardButton("🥔 आलू (Potato)", callback_data="doctor_crop:Potato"),
+        telebot.types.InlineKeyboardButton("🌾 धान (Paddy)", callback_data="doctor_crop:Paddy"),
+        telebot.types.InlineKeyboardButton("🌱 चना (Gram)", callback_data="doctor_crop:Gram")
     )
+    return markup
+
+def get_disease_list_inline(crop):
+    """Pests and diseases for the selected crop from ICAR registry."""
+    from core.advisory import load_icar_db
+    db = load_icar_db()
+    crop_data = db.get(crop, {})
+    markup = telebot.types.InlineKeyboardMarkup(row_width=1)
+    for disease_key, info in crop_data.items():
+        name_hi = info.get("name_hi", disease_key)
+        markup.add(telebot.types.InlineKeyboardButton(f"🔬 {name_hi}", callback_data=f"doctor_select:{crop}:{disease_key}"))
+    markup.add(telebot.types.InlineKeyboardButton("🔙 5 मुख्य फसलें बदलें", callback_data="doctor_crop_restart"))
     return markup
 
 def get_truck_status_inline():
@@ -723,7 +733,7 @@ def init_telegram_bot(token=None):
             return handle_my_stock(message)
 
         elif "रोग" in text or "doctor" in t_lower or "पत्ती" in text or "बीमारी" in text:
-            prompt_text = "📸 *ICAR AI फसल डॉक्टर*\nपत्ती की तस्वीर भेजें या नीचे दिए आम रोगों में से चुनें:"
+            prompt_text = "🌿 *ICAR AI फसल डॉक्टर व कीटनाशक सलाह*\nनीचे 5 मुख्य फसलों में से अपनी फसल चुनें (या सीधे रोगग्रस्त पत्ती की फोटो भेजें, AI विज़न अपने-आप पहचान लेगा):"
             return bot.reply_to(message, prompt_text, parse_mode="Markdown", reply_markup=get_crop_doctor_inline())
 
         elif "गाड़ी" in text or "ट्रक" in text or "truck" in t_lower or "पिकअप" in text:
@@ -878,7 +888,24 @@ def init_telegram_bot(token=None):
             else:
                 bot.send_message(chat_id, f"⚠️ लॉट #{lot_id} नहीं मिला।")
 
-        # Flow G: Crop Doctor 1-tap diagnosis
+        # Flow G: Crop Doctor 5-Crop Selection & 1-tap diagnosis
+        elif data.startswith("doctor_crop:"):
+            crop = data.split(":")[1]
+            bot.send_message(
+                chat_id,
+                f"🌿 *{crop} — ICAR पंजीकृत रोग व कीट सूची:*\nनीचे अपनी समस्या चुनें (या सीधे पत्ती की फोटो भेजें, AI विज़न अपने-आप पहचान लेगा):",
+                parse_mode="Markdown",
+                reply_markup=get_disease_list_inline(crop)
+            )
+
+        elif data == "doctor_crop_restart":
+            bot.send_message(
+                chat_id,
+                "🌿 *ICAR AI फसल डॉक्टर व कीटनाशक सलाह*\nनीचे 5 मुख्य फसलों में से अपनी फसल चुनें:",
+                parse_mode="Markdown",
+                reply_markup=get_crop_doctor_inline()
+            )
+
         elif data.startswith("doctor_select:"):
             _, crop, disease = data.split(":")
             presc = get_prescription(crop=crop, disease=disease)

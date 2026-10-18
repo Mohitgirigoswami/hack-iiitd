@@ -261,9 +261,14 @@ export default function FarmerView({ state, onRefresh }) {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (event) => {
-      setLeafFilePreview(event.target.result);
+      const b64 = event.target.result;
+      setLeafFilePreview(b64);
       setSelectedLeafSample(file.name);
-      handleRunAdvisory(`Farmer uploaded leaf photo: ${file.name}. Diagnostic check for fungal rust or blight.`, 'Mustard');
+      handleRunAdvisory(
+        `AI Autonomous Vision Leaf Scan for ${file.name}. Identify crop and disease directly from leaf image.`,
+        null,
+        b64
+      );
     };
     reader.readAsDataURL(file);
   };
@@ -301,18 +306,19 @@ export default function FarmerView({ state, onRefresh }) {
     }
   };
 
-  const handleRunAdvisory = async (customQuery, customCrop) => {
+  const handleRunAdvisory = async (customQuery, customCrop, customImage) => {
     setAdvising(true);
     try {
       const q = typeof customQuery === 'string' ? customQuery : advisoryInput;
-      const c = customCrop || 'Mustard';
+      const c = customCrop !== undefined ? customCrop : null;
+      const payload = { query: q };
+      if (c) payload.crop = c;
+      if (customImage) payload.image = customImage;
+
       const res = await fetch('/api/advisory/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          crop: c,
-          query: q,
-        })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const data = await res.json();
@@ -1011,7 +1017,7 @@ export default function FarmerView({ state, onRefresh }) {
               बीमार पत्ती का नमूना चुनें या अपने कैमरे / फोन से पत्ती की फोटो अपलोड करें:
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {[
                 {
                   crop: 'Mustard',
@@ -1033,6 +1039,20 @@ export default function FarmerView({ state, onRefresh }) {
                   latin: 'Phytophthora infestans',
                   symptom: 'आलू के पत्तों पर भूरे-काले पानीदार धब्बे और निचली सतह पर सफेद फफूंद (water-soaked lesions)।',
                   img: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&auto=format&fit=crop&q=80'
+                },
+                {
+                  crop: 'Paddy',
+                  disease: 'Brown Planthopper (भूरा फुदका)',
+                  latin: 'Nilaparvata lugens',
+                  symptom: 'धान के पौधों के आधार से रस चूसना, पत्तियां पीली पड़कर सूखना (हॉपर बर्न - Hopper Burn लक्षण)।',
+                  img: 'https://images.unsplash.com/photo-1536939459926-301728717817?w=400&auto=format&fit=crop&q=80'
+                },
+                {
+                  crop: 'Gram',
+                  disease: 'Pod Borer (चना इल्ली)',
+                  latin: 'Helicoverpa armigera',
+                  symptom: 'चने के डंठल और फली में गोल छेद करके दानों को खाना, पत्तियों को कुतरना (हरा-भूरा कैटरपिलर)।',
+                  img: 'https://images.unsplash.com/photo-1589923188900-85dae523342b?w=400&auto=format&fit=crop&q=80'
                 }
               ].map((sample) => (
                 <button

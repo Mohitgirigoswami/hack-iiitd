@@ -644,33 +644,55 @@ def synthesize_tts():
 
 @app.route("/api/advisory/scan", methods=["POST"])
 def scan_crop_disease():
+    """
+    Autonomous Zero-Memory Crop Leaf Pathology Diagnosis.
+    Farmers do NOT need to know the disease or crop in memory.
+    AI Vision inspects raw image bytes, auto-detects crop & pathology,
+    and returns deterministic ICAR prescription with 15L tank dosage.
+    """
+    crop = None
+    image_bytes = None
     if request.is_json:
         json_data = request.get_json(silent=True) or {}
-        crop = json_data.get("crop", "Mustard")
-        b64_data = json_data.get("image_base64")
-        image_bytes = None
+        crop = json_data.get("crop")
+        b64_data = json_data.get("image_base64") or json_data.get("image")
         if b64_data:
             try:
+                if "," in b64_data:
+                    b64_data = b64_data.split(",", 1)[1]
                 image_bytes = base64.b64decode(b64_data)
             except Exception:
                 image_bytes = None
     else:
-        crop = request.form.get("crop", "Mustard")
+        crop = request.form.get("crop")
         file = request.files.get("image")
         image_bytes = file.read() if file else None
 
+    # Autonomous zero-memory diagnosis: if crop is None/auto, vision detects both crop & disease
     diagnosis = analyze_crop_leaf_disease(image_bytes=image_bytes, crop_hint=crop)
-    prescription = get_prescription(crop=crop, disease=diagnosis["disease"])
-    hindi_text = f"आपकी {crop} की फसल में {prescription['disease_name']} के लक्षण हैं। इसके लिए {prescription['chemical_salt']} का छिड़काव करें। नाप: {prescription['dosage_hi']}। {prescription['warning_hi']}"
+    detected_crop = diagnosis.get("crop", crop or "Mustard")
+    detected_disease = diagnosis.get("disease", "White Rust")
+    prescription = get_prescription(crop=detected_crop, disease=detected_disease)
+
+    hindi_text = (
+        f"आपकी {detected_crop} की फसल में {prescription['disease_name']} के लक्षण हैं। "
+        f"इसके लिए {prescription['chemical_salt']} का छिड़काव करें। "
+        f"15 लीटर ढोलकी पंप नाप: {prescription.get('dosage_15l_tank_hi', prescription['dosage_hi'])}। "
+        f"{prescription['warning_hi']}"
+    )
 
     audio_bytes = generate_hindi_audio(hindi_text)
     audio_b64 = base64.b64encode(audio_bytes).decode("utf-8") if audio_bytes else None
 
     return jsonify({
+        "status": "SUCCESS",
         "diagnosis": diagnosis,
         "prescription": prescription,
+        "detected_crop": detected_crop,
+        "detected_disease": detected_disease,
         "spoken_text_hi": hindi_text,
-        "audio_base64": audio_b64
+        "audio_base64": audio_b64,
+        "autonomous_detected": diagnosis.get("autonomous_detected", True)
     })
 
 @app.route("/api/advisory/catalog", methods=["GET"])
@@ -1318,20 +1340,60 @@ def telegram_bot_command():
             {"label": f"📈 {crop} मंडी भाव", "cmd": f"/mandi {crop.lower()}"},
             {"label": "🌾 एक और फसल जोड़ें", "cmd": "/addlot_start"}
         ]
-    elif cmd in ["/photo", "/scan", "/disease"]:
-        raw_target = (parts[1] if len(parts) > 1 else data.get("crop", "Mustard")).strip().lower()
-        if "wheat" in raw_target or "गेहूं" in raw_target or "कनक" in raw_target:
-            crop_hint = "Wheat"
-            disease = data.get("disease") or "Yellow Rust"
-        elif "potato" in raw_target or "आलू" in raw_target:
-            crop_hint = "Potato"
-            disease = data.get("disease") or "Late Blight"
-        elif "paddy" in raw_target or "धान" in raw_target:
-            crop_hint = "Paddy"
-            disease = data.get("disease") or "Blast"
+    elif cmd in ["/photo", "/scan", "/disease", "/doctor"]:
+        image_b64 = data.get("image_base64")
+        if image_b64:
+            # Autonomous zero-memory vision diagnosis
+            try:
+                if "," in image_b64:
+                    image_b64 = image_b64.split(",", 1)[1]
+                img_bytes = base64.b64decode(image_b64)
+            except Exception:
+                img_bytes = None
+            diag = analyze_crop_leaf_disease(image_bytes=img_bytes, crop_hint=data.get("crop"))
+            crop_hint = diag.get("crop", "Mustard")
+            disease = diag.get("disease", "White Rust")
         else:
-            crop_hint = "Mustard"
-            disease = data.get("disease") or "White Rust"
+            raw_target = (parts[1] if len(parts) > 1 else data.get("crop", "")).strip().lower()
+            if not raw_target:
+                # 5-Crop Menu Prompt
+                reply = (
+                    f"🌿 *ICAR AI फसल डॉक्टर व कीटनाशक सलाह*\n"
+                    f"━━━━━━━━━━━━━━━━━━\n"
+                    f"नीचे दिए 5 मुख्य फसलों में से अपनी फसल चुनें, या कैमरे से सीधे पत्ती की फोटो अपलोड करें (AI Vision अपने-आप फसल और रोग पहचान लेगा):"
+                )
+                options = [
+                    {"label": "🟡 सरसों (Mustard)", "cmd": "/photo mustard"},
+                    {"label": "🌾 गेहूँ (Wheat)", "cmd": "/photo wheat"},
+                    {"label": "🥔 आलू (Potato)", "cmd": "/photo potato"},
+                    {"label": "🌾 धान (Paddy)", "cmd": "/photo paddy"},
+                    {"label": "🌱 चना (Gram)", "cmd": "/photo gram"}
+                ]
+                return jsonify({
+                    "status": "SUCCESS",
+                    "command": command_text,
+                    "reply": reply,
+                    "audio_base64": None,
+                    "options": options,
+                    "farmer_name": farmer_name,
+                    "phone": phone
+                })
+
+            if "wheat" in raw_target or "गेहूं" in raw_target or "कनक" in raw_target:
+                crop_hint = "Wheat"
+                disease = data.get("disease") or (parts[2] if len(parts) > 2 else "Yellow Rust")
+            elif "potato" in raw_target or "आलू" in raw_target:
+                crop_hint = "Potato"
+                disease = data.get("disease") or (parts[2] if len(parts) > 2 else "Late Blight")
+            elif "paddy" in raw_target or "धान" in raw_target:
+                crop_hint = "Paddy"
+                disease = data.get("disease") or (parts[2] if len(parts) > 2 else "Brown Planthopper")
+            elif "gram" in raw_target or "चना" in raw_target:
+                crop_hint = "Gram"
+                disease = data.get("disease") or (parts[2] if len(parts) > 2 else "Pod Borer")
+            else:
+                crop_hint = "Mustard"
+                disease = data.get("disease") or (parts[2] if len(parts) > 2 else "Aphids / Mahu")
 
         from core.advisory import get_prescription
         presc = get_prescription(crop=crop_hint, disease=disease)
@@ -1339,17 +1401,19 @@ def telegram_bot_command():
             f"📸 *फसल पत्ती रोग जांच रिपोर्ट (ICAR AI Doctor)*\n"
             f"━━━━━━━━━━━━━━━━━━\n"
             f"🌾 *फसल:* {crop_hint}\n"
-            f"🦠 *पहचानी गई बीमारी:* {presc['disease_name']}\n"
-            f"🧪 *असली जेनेरिक साल्ट:* `{presc['chemical_salt']}`\n"
-            f"⚖️ *मात्रा व नाप:* {presc['dosage_hi']}\n"
-            f"💰 *अनुमानित खर्च:* {presc.get('estimated_price', '₹180 - ₹240')} (80% बचत)\n\n"
-            f"⚠️ *चेतावनी:* {presc['warning_hi']}"
+            f"🦠 *पहचानी गई बीमारी:* *{presc['disease_name']}*\n"
+            f"🧪 *असली टेक्निकल साल्ट:* `{presc['chemical_salt']}`\n"
+            f"⚖️ *15L ढोलकी नाप:* *{presc.get('dosage_15l_tank_hi', presc['dosage_hi'])}*\n"
+            f"💰 *अनुमानित खर्च:* जेनेरिक {presc.get('generic_price', '₹180')} vs ब्रांडेड {presc.get('brand_price', '₹850')} (*~{presc.get('savings_pct', 75)}% बचत*)\n"
+            f"🌱 *जैविक विकल्प:* {presc.get('organic_alternative_hi', 'नीम का तेल (10,000 PPM)')}\n\n"
+            f"⚠️ *सुरक्षा चेतावनी:* {presc['warning_hi']}"
         )
         options = [
-            {"label": "🌿 सरसों सफेद रतुआ", "cmd": "/photo mustard"},
-            {"label": "🌾 गेहूँ पीला रतुआ", "cmd": "/photo wheat"},
-            {"label": "🥔 आलू झुलसा", "cmd": "/photo potato"},
-            {"label": "🌾 फसल पूलिंग", "cmd": "/addlot_start"}
+            {"label": "🟡 सरसों (Mustard)", "cmd": "/photo mustard"},
+            {"label": "🌾 गेहूँ (Wheat)", "cmd": "/photo wheat"},
+            {"label": "🥔 आलू (Potato)", "cmd": "/photo potato"},
+            {"label": "🌾 धान (Paddy)", "cmd": "/photo paddy"},
+            {"label": "🌱 चना (Gram)", "cmd": "/photo gram"}
         ]
     elif cmd == "/truckstatus":
         pool = get_active_pool() or state.active_pool
