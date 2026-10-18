@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Truck, CheckCircle2, XCircle, MapPin, ShieldAlert, AlertTriangle, 
   ArrowRight, CloudRain, Volume2, Package, Repeat, Sparkles, Navigation, 
-  Thermometer, Wind, Check, Sun, Calendar, Clock, RefreshCw, Send, DollarSign
+  Thermometer, Wind, Check, Sun, Calendar, Clock, RefreshCw, Send, DollarSign,
+  Building2
 } from 'lucide-react';
 import { useRole } from '../../context/RoleContext';
 

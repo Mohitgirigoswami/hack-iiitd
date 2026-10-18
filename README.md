@@ -7,10 +7,23 @@
 
 [![Hackathon](https://img.shields.io/badge/IIIT--Delhi-Hackathon_2026-10b981?style=for-the-badge&logo=target)](https://iiitd.ac.in)
 [![Theme](https://img.shields.io/badge/Theme-Agriculture_&_Rural_Development-059669?style=for-the-badge)](https://iiitd.ac.in)
-[![Phase](https://img.shields.io/badge/Milestone-Phase_1_Core_Prototype-3b82f6?style=for-the-badge)]
+[![Tests](https://img.shields.io/badge/E2E_Tests-37%2F37_PASSED_(100%25)-brightgreen?style=for-the-badge)](tests/test_e2e_suite.py)
+[![Telegram Bot](https://img.shields.io/badge/Telegram_Bot-@KhetOSSaathiBot-229ED9?style=for-the-badge&logo=telegram)](https://t.me/KhetOSSaathiBot)
+[![Seeded Fleet](https://img.shields.io/badge/Seeded_Fleet-Mahindra_Bolero_(HR--12--AE--8419)-blue?style=for-the-badge)](api/core/database.py)
 [![License](https://img.shields.io/badge/License-MIT-gray?style=for-the-badge)](LICENSE)
 
-> **KhetOS** is an open farm-gate aggregation and micro-logistics operating system designed for India's 86% smallholder farmers. It bypasses predatory village middlemen by transforming unmapped dirt roads (*kaccha rasta*) into consolidated freight corridors through zero-app toll-free IVR telephony, discrete 50kg-bag knapsack pooling, farm-gate digital quality gatekeeping, and institutional wholesale escrow settlement.
+> **KhetOS** is an open farm-gate aggregation and micro-logistics operating system designed for India's 86% smallholder farmers. It bypasses predatory village middlemen by transforming unmapped dirt roads (*kaccha rasta*) into consolidated freight corridors through zero-app toll-free IVR telephony, vernacular Telegram bot intelligence (`@KhetOSSaathiBot`), discrete 50kg-bag knapsack pooling, farm-gate digital quality gatekeeping, and institutional wholesale escrow settlement.
+
+---
+
+## 📁 Hackathon Submission Deliverables
+
+| Deliverable | Repository Location / Format | Details |
+| :--- | :--- | :--- |
+| 📊 **Presentation Deck (PPT)** | [`presentation/KhetOS_Pitch_Deck.pptx`](presentation/README.md) *(or `.pdf`)* | Slide deck covering Smallholder Agronomy Landscape, System Architecture, Discrete Bag Knapsack Engine, and Business Model. |
+| 🎥 **Video Demonstration** | Mandatory $\le$ 2-Minute Screen Share with Presenter Face / Webcam | Timed 120-second walkthrough following the strict presenter cue sheet below. |
+| 🤖 **Telegram Kisan Bot** | [`@KhetOSSaathiBot`](https://t.me/KhetOSSaathiBot) | Live Telegram interface for zero-app harvest lot listings, mandi price intelligence, and weighbridge payouts. |
+| 🧪 **E2E Test Suite (100%)** | [`tests/test_e2e_suite.py`](tests/test_e2e_suite.py) | 37 automated tests passing across 4 rigorous tiers with 100% pass rate. |
 
 ---
 
@@ -38,30 +51,55 @@ In Indian agriculture, **86% of farmers are smallholders** operating on less tha
 
 ---
 
+## 🎬 2-Minute Video Submission Guide (Presenter Face + Screen)
+
+> [!IMPORTANT]
+> **Mandatory Evaluation Requirements:**
+> 1. **Presenter Face Required:** The video **must show your face** (webcam bubble / picture-in-picture box on the side or corner) simultaneously alongside the screen recording (using tools like Loom, OBS Studio, or Zoom).
+> 2. **Strict Time Limit:** Duration must **not exceed 2 minutes (120 seconds)**. Keep narration crisp and transitions snappy.
+
+```
+0:00 ───[ 18s Problem & Intro ]─── 0:18 ───[ 24s Farmer Listing ]─── 0:42 ───[ 20s Buyer Order ]─── 1:02 ───[ 24s Admin Dispatch ]─── 1:26 ───[ 18s Driver & Backhaul ]─── 1:44 ───[ 16s Settlement ]─── 2:00
+```
+
+| Timestamp | Screen & On-Camera Action (Face on Side + Screen) | Word-for-Word Narration Script (120s Pitch) |
+| :--- | :--- | :--- |
+| **0:00 - 0:18** *(18s)* | • **Camera on Presenter**, screen shows `khetos-logo.png` & Problem Card.<br/>• Confident greeting into webcam. | *"Hello evaluators, I am presenting **KhetOS** for Theme 3: Agriculture & Rural Development. In India, 86% of farmers are smallholders with micro-lots of 4 to 10 quintals. Hiring a solo tempo costs ₹2,100, while commercial trucks refuse unmapped dirt tracks. Middlemen pocket ₹700 per quintal. KhetOS solves this by transforming dirt roads into consolidated freight corridors without requiring smartphones."* |
+| **0:18 - 0:42** *(24s)* | • Switch screen to **Telegram Bot** `@KhetOSSaathiBot` (or `/call` IVR).<br/>• Type `/addlot 4 mustard`.<br/>• Show the live database listing confirmation. | *"Smallholders list their harvest through our zero-app Telegram bot or toll-free IVR. Notice the bot acknowledges the lot is registered **live in the KhetOS database**—it does not claim fake auto-allocation. It calculates an immediate ₹2,160 profit boost and confirms that vehicle allocation will follow once matched."* |
+| **0:42 - 1:02** *(20s)* | • Switch screen to **Buyer Portal** (`/buyer`).<br/>• Point to live stock table.<br/>• Place an order for 15 quintals. | *"On the Buyer Portal, institutional mills like Shree Ram Flour & Oil Mill see real-time available stock aggregated directly from SQLite. Placing a 15-quintal order instantly validates inventory and computes an accurate delivery ETA at Azadpur Mandi Gate 4."* |
+| **1:02 - 1:26** *(24s)* | • Switch screen to **Admin Command Center** (`/dashboard`).<br/>• Show Knapsack + TSP bundling 3 farmers.<br/>• Click **"Approve & Dispatch Bolero (HR-12-AE-8419)"**.<br/>• Show farmer Telegram notification arriving. | *"At the APMC Command Center, our Knapsack and TSP algorithm bundles smallholders Suresh, Dinesh, and Ramu to reach exactly 100% capacity (30 bags / 15 Qtl) on our seeded Mahindra Bolero truck. As I click 'Approve & Dispatch', the driver portal updates and an official vehicle allocation alert is dispatched to each farmer's Telegram!"* |
+| **1:26 - 1:44** *(18s)* | • Switch screen to **Driver Portal** (`/driver`).<br/>• Show Baljit Singh's stops & 3-point digital checklist.<br/>• Highlight Reverse Backhaul manifest. | *"Driver Baljit Singh executes farm-gate pickups along village KhetPins using our 3-point quality gate with ₹0 sun-drying deferral. For the return journey, KhetOS loads 1,000 kg of return cargo—Pashu Aahar and IFFCO fertilizer—eliminating 100% of empty deadhead miles (0% Khali Phera)."* |
+| **1:44 - 2:00** *(16s)* | • Click Arrive Mandi ➔ Settle Sale.<br/>• Show itemized Telegram payout receipt.<br/>• Look at camera for closing. | *"At Azadpur Mandi, the sale finalizes at the electronic weighbridge. The Telegram bot instantly sends an itemized settlement slip with transparent freight, 1% APMC cess, and net bank payout. KhetOS delivers real efficiency and fair earnings to India's smallholders. Thank you!"* |
+
+---
+
 ## 🏛️ System Architecture
 
 ```mermaid
 flowchart TD
-    subgraph S1["1. Zero-App Farm-Gate Ingestion"]
-        A["Smallholder Farmer<br/>(Feature Phone / Basic 2G)"] -->|"Toll-Free 1800-KHET-OS<br/>DTMF Keypad Press 2"| B["Telephony Ingestion Gateway<br/>(Flask REST + Microsoft Azure Neural Audio)"]
+    subgraph S1["1. Zero-App Farm-Gate Listing"]
+        A["Smallholder Farmer<br/>(Telegram @KhetOSSaathiBot / 1800-IVR)"] -->|"Declares Lot<br/>e.g. 4 Qtl / 8 Bags"| B["KhetOS Central Engine<br/>(Live DB Sync & Profit Estimation)"]
     end
 
-    subgraph S2["2. Micro-Corridor Aggregation Engine"]
-        B --> C["Discrete Bag Knapsack Optimizer<br/>(50kg Integer Allocation)"]
-        C --> D["Mahindra Bolero Maxi Truck<br/>(1,500 kg / 30 Bag Cargo Matrix)"]
-        D -->|"73.3% ➔ 100% Full"| E["Dispatch Lock & Manifest Generation"]
+    subgraph S2["2. Institutional Buyer Matching"]
+        B --> C["Buyer Procurement Portal<br/>(Live Stock Validation & Mandi Delivery ETA)"]
     end
 
-    subgraph S3["3. Farm-Gate Quality Gatekeeper"]
-        E --> F["Transporter Quality Checklist<br/>(Tactile & Visual Pre-Loading Inspection)"]
-        F -->|"Moisture > 8%"| G["₹0 Sun-Drying Deferral<br/>(Zero Wasted Freight)"]
-        F -->|"Inspection Passed"| H["Double-Stitched Gunny Bags Loaded<br/>(Farmer-Specific Ink Stencils)"]
+    subgraph S3["3. Knapsack & TSP Fleet Dispatch"]
+        C --> D["Admin Command Center<br/>(Discrete 50kg-Bag Knapsack Optimizer)"]
+        D -->|"Locks 15 Qtl / 30 Bags (100% Load)"| E["Mahindra Bolero Maxi Truck (HR-12-AE-8419)<br/>Driver: Baljit Singh"]
+        E -->|"Official Telegram Allocation Alert"| A
     end
 
-    subgraph S4["4. Institutional Wholesale Escrow"]
-        H --> I["APMC Electronic Weighbridge<br/>(Kanta Parchi Digital Dock Slip)"]
-        J["Institutional Wholesale Buyer<br/>(Flour Mills / Oil Processors)"] -->|"20% Advance Custody Lock"| K["Razorpay Platform Escrow"]
-        K -->|"Weighbridge Dock Verification"| L["Direct Farmer Payouts (UPI/NEFT)<br/>+ Transporter Freight Clearance"]
+    subgraph S4["4. Quality Gate & Reverse Backhaul"]
+        E --> F["Driver Digital Quality Gate<br/>(Packaging, Purity, <8% Moisture Rub)"]
+        F -->|"Moisture > 8%"| G["₹0 Sun-Drying Deferral<br/>(Zero Transit Waste)"]
+        F -->|"Inspection Passed"| H["Forward Freight to APMC Mandi<br/>+ 1,000kg Return Cargo (Urea / Feed Cake)"]
+    end
+
+    subgraph S5["5. Mandi Weighbridge Settlement"]
+        H --> I["Azadpur APMC Electronic Weighbridge<br/>(Digital Dock Slip Verification)"]
+        I --> J["Itemized Telegram Payout Slip<br/>(Net Payout Credited Directly to Bank)"]
     end
 ```
 
@@ -86,22 +124,22 @@ flowchart TD
   └── Key *: Return to Main Menu
   ```
 
-### 2. Vernacular Telegram Kisan Bot (`@khetos_bot`)
+### 2. Vernacular Telegram Kisan Bot (`@KhetOSSaathiBot`)
 * **Dual-Channel Mirroring:** Every telephony action is mirrored instantly in real-time to the farmer's Telegram bot terminal.
 * **Zero Authentication Friction:** Auto-bound to the farmer's verified mobile CLI.
 * **Conversational Command Set:**
   * `/start` or `/help` — Welcomes farmer in Hindi with KhetPin and available menu.
-  * `/mandi` — Returns today's live modal prices for Mustard, Wheat, and Paddy.
+  * `/mandi` — Returns today's live modal prices for Mustard, Wheat, Paddy, etc.
   * `/mystock` — Queries active registered lots, quintals, and 50kg bag allocations.
-  * `/addlot [qtl]` — Declares new harvest lot (e.g. `/addlot 4` creates 8 bags).
+  * `/addlot [qtl] [crop]` — Declares new harvest lot live in DB (e.g. `/addlot 4 mustard` creates 8 bags).
   * `/modlot [lot_id] [qtl]` — Dynamically updates bag quantity.
   * `/dellot [lot_id]` — Cancels/removes lot from vehicle queue with ₹0 penalty.
-  * `/accept [lot_id]` — Confirms scheduled transporter pickup.
-  * `/reject [lot_id]` — Postpones pickup without platform demerits.
+  * `/tubewell [crop]` — Canal water turn schedule & weather-adjusted irrigation advisory.
+  * `/photo` or leaf upload — Autonomous ICAR vision diagnosis across 5 crops with generic chemical salt prescription.
 
 ### 3. Discrete 50kg-Bag Knapsack Optimization Engine
 * **Physical-to-Digital Integrity:** Prevents grain lot contamination by modeling loads as discrete **50kg gunny bags (*bori*)** rather than continuous bulk volume.
-* **Corridor Consolidation:** Aggregates fractional loads (e.g., Suresh: 12 bags, Dinesh: 10 bags, Ramu: 8 bags) to reach **100% payload capacity (1,500 kg / 30 bags)** on standard rural transport vehicles (Mahindra Bolero Maxi Truck).
+* **Corridor Consolidation:** Aggregates fractional loads (e.g., Suresh: 12 bags / 6 Qtl, Dinesh: 10 bags / 5 Qtl, Ramu: 8 bags / 4 Qtl) to reach **100% payload capacity (1,500 kg / 30 bags / 15 Quintals)** on our seeded rural transport vehicle (**Mahindra Bolero Maxi Truck `HR-12-AE-8419`**).
 * **Zero Lot Fragmentation:** Bags are stenciled per farmer and physically segregated by tarpaulin bulkheads in the vehicle bay.
 
 ### 4. Reverse Backhaul Date & Capacity Pooling (*0% Khali Phera*)
@@ -237,25 +275,42 @@ Backend & Micro-Services:
 
 ---
 
-## 🧪 Live Stage Demonstration Flow
+## 🧪 Prototype Evaluation & Verification Flow
 
-To reproduce the IIIT-Delhi Hackathon stage demonstration:
+To evaluate the complete end-to-end procurement cycle locally:
 
-1. **Open the Telemetry Display:** Navigate to `http://localhost:5173/dashboard` (Admin View). The active corridor capacity shows **73.3% / 1,100 kg** filled (Suresh: 12 bags, Dinesh: 10 bags).
-2. **Open the Telephony Studio:** In a side tab or mobile browser, navigate to `http://localhost:5173/call`.
-3. **Dial 1800-KHET-OS:** Click **Dial 1800-KHET-OS**. The system initiates the call and speaks Hindi welcome instructions.
-4. **Trigger Keypad Ingestion:** Press **Key 2** (`Pool Truck ⚡`).
-   * DTMF dual-tone beeps.
-   * Natural Hindi neural voice confirms: *"रामू चाचा, आपकी 4 क्विंटल सरसों गाड़ी में जुड़ गई है..."*
-5. **Observe Instant Corridor Fill:** Switch back to `/dashboard`.
-   * The cargo gauge animates dynamically from **73.3% ➔ 100% FULL • DISPATCH LOCKED**.
-   * Ramu's 8 bags (400 kg) lock into the 30-bag cargo matrix.
-6. **Execute Pre-Loading Inspection:** Switch role to **Transporter** (`/driver`). Complete the 3-point checklist and click **Approve & Load**.
-7. **Lock Wholesale Escrow:** Switch role to **Buyer** (`/buyer`). Click **Calculate Knapsack Allocation ⚡** and deposit the **20% advance Razorpay custody lock**.
-8. **Reset Demo State:**
+1. **Verify Automated Test Suite (37/37 Passed):**
    ```bash
-   curl -X POST http://localhost:5000/api/reset
+   python tests/test_e2e_suite.py
    ```
+   *Executes all 4 tiers: Feature coverage (20), boundaries (12), cross-feature combos (4), and full 8-stage operational cycle (1).*
+
+2. **Farmer Harvest Registration (Live DB Sync):**
+   * Smallholder registers lot via Telegram `@KhetOSSaathiBot` (`/addlot 4 mustard`) or `/call` IVR.
+   * The lot is immediately written to SQLite with status `PENDING_OFFER` (awaiting buyer/mandi matching).
+
+3. **Buyer Procurement & ETA Calculation:**
+   * Navigate to the **Buyer Portal** (`/buyer`).
+   * The live available stock widget aggregates real-time inventory from the database.
+   * Submitting an order (e.g. 15 Quintals Mustard) matches inventory and computes an accurate delivery ETA at Azadpur Mandi Gate 4.
+
+4. **Admin Knapsack + TSP Clustering & 1-Click Dispatch:**
+   * Navigate to the **Admin Command Center** (`/dashboard`).
+   * The visual optimization matrix displays candidate smallholder lots clustered into the single seeded **Mahindra Bolero Maxi Truck (`HR-12-AE-8419`)**.
+   * Clicking **"Approve & Dispatch Bolero"** creates the active trip and immediately triggers official Telegram vehicle allocation alerts to the farmers.
+
+5. **Driver Farm-Gate Milk-Run & Quality Gate:**
+   * Navigate to the **Driver Portal** (`/driver`) for Baljit Singh.
+   * Start the trip to begin sequential farm-gate pickups along village KhetPins.
+   * Complete the 3-point digital pre-loading quality check (gunny bag stencils, visual purity, <8% tactile moisture rub with ₹0 sun-drying deferral).
+
+6. **Reverse Backhaul & 0% Khali Phera Elimination:**
+   * Transporters view the return cargo manifest (1,000 kg of *Pashu Aahar* feed cake and IFFCO fertilizer).
+   * Eliminates 65 km of empty deadhead transit back to village PACS societies.
+
+7. **Mandi Weighbridge Dock Settlement:**
+   * Click **Arrive at Mandi** and **Settle Sale** at the Azadpur APMC electronic weighbridge.
+   * The Telegram bot instantly generates and sends the itemized settlement breakdown (gross value, pooling freight deduction, 1% APMC cess, labor, and net bank payout).
 
 ---
 
